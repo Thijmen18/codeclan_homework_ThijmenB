@@ -1,0 +1,146 @@
+---
+title: "W1 D2 Homework Thijmen"
+output: html_notebook
+---
+
+# ##### Question 1
+Load in the dataset and have a look at it. What are the dimensions, variable types, 
+variable names, etc.?
+
+Loading in the dataset and load packages
+```{r}
+library(CodeClanData)
+library(tidyverse)
+
+drinks_content
+
+
+dim(drinks_content)
+
+names(drinks_content)
+```
+check variable types and contents
+```{r}
+glimpse(drinks_content)
+```
+check first rows of data
+```{r}
+head(drinks_content)
+```
+what is the underlying datatype
+```{r}
+class(drinks_content)
+```
+
+# ####### Question 2
+Let’s first investigate the calories of different drinks. Select the variables 
+Beverage_category, Beverage, Beverage prep and Calories from your data.
+Since we are interested in the calorie content, check if there are any NA values in the data, 
+and drop them if there are.
+
+first check if there are missing values in Calories
+```{r}
+drinks_content %>% 
+  mutate(Calories = is.na(Calories))
+```
+no missing data (all variables are 'FALSE'), just select the columns we want:
+
+```{r}
+drinks_content %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) 
+```
+Note:
+you can remove NA values from columns using:
+mutate(Calories != "NA")
+
+
+# ####### Question 3
+
+Create a new variable (column) called calorie_diff, which stores the difference 
+between 135 calories (135 calories = 10 cubes of sugar!) and the calories in each drink. 
+(hint: you’ll want to subtract 135 from the calories to see which drink have more or less than 10 cups of sugar).
+
+Create a new column which subtracts 135 from calories from each drink
+```{r}
+drinks_content %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  mutate(calorie_diff = Calories - 135)
+```
+
+# ##### Question 4
+Summarise the mean number of calories in each beverage_category. 
+Which 3 category of drinks have the most calories? 
+Which 3 drinks have the least? Write a small summary of your findings.
+
+Check mean number of calories per beverage category
+```{r}
+drinks_content %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  group_by(Beverage_category) %>% 
+  summarise(mean_calories = mean(Calories, na.rm = TRUE)) %>% 
+  arrange(mean_calories)
+```
+
+Check total number of calories per beverage category
+```{r}
+drinks_content %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  group_by(Beverage_category) %>% 
+  summarise(sum_calories = sum(Calories, na.rm = TRUE)) %>% 
+  arrange(sum_calories)
+```
+
+In conclusion: the three beverage categories with the highest mean of Calories are:
+1) Smoothies, 2) Frappucino Blended coffee, 3) Signature Espresso
+
+ the beverage category with the lowest total number of Calories are:
+ 1) Coffee, 2) Frappuccino® Light Blended Coffee, 3) Shaken Iced Beverages
+
+
+# ##### Question 5
+Let’s look at this a different way. What is the average number of calories in each Beverage_prep type?
+
+```{r}
+drinks_content %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  group_by(Beverage_prep) %>% 
+  summarise(mean_calories_beverage_prep = mean(Calories, na.rm = TRUE)) %>% 
+  arrange(mean_calories_beverage_prep)
+```
+
+# ##### Question 6
+Which Beverage_prep type contains more than the average calories of all drinks?
+
+first calculate the mean of all drinks, than use that to filter the beverage_prep types
+```{r}
+drinks_content %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  group_by(Beverage_prep) %>%
+  summarise(mean_calories_beverage_prep = mean(Calories, na.rm = TRUE)) %>% 
+  filter(mean_calories_beverage_prep >= mean(drinks_content$Calories))
+
+```
+So the average amount of calories in all drinks is 193.8719
+#also possible to check with
+```{r}
+drinks_content %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  summarise(Mean = mean(Calories)) 
+```
+and there are 5 beverage_prep types with a higher average mean than the total 
+mean of all drinks
+
+
+# ###### Question 7
+Which is the best type of coffee drink 
+(and by ‘drink’ we mean the combination of Beverage_category, Beverage and Beverage_prep) 
+to get if you’re worried about consuming too many calories?
+
+```{r}
+drinks_content %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  filter(Beverage_category == "Coffee" | Beverage  == "Coffee" | Beverage_prep  == "Coffee") %>% 
+  arrange(Calories) %>% 
+  head(n=1)
+```
+The best coffee drink with lowest calorie content is Short, brewed Coffee.
