@@ -2,19 +2,8 @@
 title: "R Notebook - Homework Week01_Day3_ThijmenB"
 output:
   html_document:
-    toc: true
-    toc_float: true
-    number_sections: true
     df_print: paged
-    css: ../../../styles.css
-  pdf_document: default
 ---
-
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.align = 'center')
-```
-
 
 
 # Homework
@@ -60,7 +49,6 @@ A lot of interesting stuff in there! But for now, we are only interested in the
 movies’ titles, their runtime as well as their budget. Select the three columns 
 that contain this information and save them into a new variable called movies_selected. 
 Hint: you will have to make a choice between original_title and title.
-
 
 ```{r}
 movies_selected <- movies %>% 
