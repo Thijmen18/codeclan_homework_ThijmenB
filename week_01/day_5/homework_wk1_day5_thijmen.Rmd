@@ -1,0 +1,221 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Weekend homework wk01 _ Thijmen
+
+Data: Goodreads - book reviews and reading data
+
+# Start by exploring the data
+```{r}
+library(tidyverse)
+
+books <- read_csv("data/books.csv")
+
+dim(books) #11123 rows, 13 columns
+names(books)
+glimpse(books)
+view(books)
+head(books)
+```
+
+Questions of interest to answer:
+1 - What are the top rated and worst rated books, authors, publishers etc.?
+2 - Are books rated in GoodReads mostly english?
+3 - Do more recently published books receive a higher score than older books?
+4 - Do books with a text-review receive a higher average rating than books without?
+5 - We don't like transphobes, so lets change all rates of JK Rowling to 0
+
+# Lets first get a better picture of missing data
+```{r}
+books %>% 
+  summarise(across(.fns = ~ 
+                     sum(is.na(.x))
+                   ))
+
+#no missing data!
+```
+# Question 1
+* What are the top rated and worst rated books, authors, publishers etc.?
+
+```{r}
+# Authors
+books %>% 
+  select(title, authors, average_rating, ratings_count, text_reviews_count) %>% 
+  group_by(authors) %>% 
+  summarise(mean_rating = mean(average_rating)) %>% 
+  slice_max(mean_rating, n = 10)
+```
+In total 18 authors have an average rating of 5 (maximum score)
+
+Let's check how many people have actually rated these authors:
+```{r}
+books %>% 
+  select(title, authors, average_rating, ratings_count, text_reviews_count) %>% 
+  group_by(authors) %>% 
+  summarise(mean_rating = mean(average_rating), 
+            total_counts = sum(ratings_count)) %>% 
+             slice_max(mean_rating, n = 10)
+```
+So most authors that have highest 'mean_rating' have 0, 1 or 2 counts. 
+Let's filter out all books with <25 ratings_count and put that in a variable 
+'books_min25_rating'
+```{r}
+books_min25_rating <- books %>% 
+  select(title, authors, average_rating, ratings_count, text_reviews_count) %>% 
+  filter(ratings_count >= 25)
+
+books_min25_rating %>% 
+  arrange(ratings_count) # success!
+```
+Let's check top rated authors again (highest average scoring rating)
+```{r}
+books_min25_rating %>% 
+  group_by(authors) %>% 
+  summarise(mean_rating = mean(average_rating)) %>% 
+  slice_max(mean_rating, n = 10)
+
+# Top rated author(s) Saul Leiter/Martin Harrison
+  
+```
+
+* Do the same for books (we do not need to calculate the average just order on average rating)
+
+```{r}
+books_min25_rating %>% 
+  arrange(desc(average_rating)) %>% 
+  head(n = 5) %>% 
+  select(title, authors, average_rating)
+
+# Top rated book: The Complete Calvin and Hobbes, Bill Watterson, 4.82
+```
+* Do the same for publishers
+
+```{r}
+books %>% 
+  select(title, authors, average_rating, ratings_count, text_reviews_count, publisher) %>% 
+  filter(ratings_count >= 25) %>% 
+  slice_max(average_rating, n = 5) %>% 
+  select(publisher) %>% 
+  head(n = 5)
+
+# Top rated publisher is Andrews McMeel Publishing
+  
+```
+
+# Question 2
+* Are books rated in GoodReads, mostly english?
+
+```{r}
+# first lets count and drop all books with ratings_count 0
+books %>% 
+ select(ratings_count) %>% 
+  filter(ratings_count == 0)  %>% 
+  nrow() # 80! Lets drop these
+
+books_min1_rating <- books %>% 
+  select(title, authors, language_code, average_rating, ratings_count, publication_date, 
+         text_reviews_count, publisher) %>% 
+  filter(ratings_count > 0)
+
+#lets check how many language groups exist, and how many books are listed per language
+books_min1_rating %>% 
+  select(language_code, average_rating, ratings_count, text_reviews_count) %>% 
+  mutate(count = 1,
+         .after = language_code) %>% 
+  group_by(language_code) %>% 
+  summarise(total_books_per_language = sum(count))
+
+# In total 26 language codes exist, with a minimal rating count of 1
+
+# 4 different codes exist for english, lets minimise that to a single code and save the 
+# overview to a variable
+totalbooks_language <- books_min1_rating %>% 
+  select(language_code, average_rating, ratings_count, text_reviews_count) %>%
+  mutate(
+    language_code = recode(
+      language_code, 
+      "en-CA" = "eng", "en-GB" = "eng", "en-US" = "eng" 
+    )
+    ) %>% 
+  mutate(count = 1,
+         .after = language_code) %>% 
+  group_by(language_code) %>% 
+  summarise(total_books_per_language = sum(count))
+
+totalbooks_language
+
+# Let's now count the percentage of books per language of the total
+totalbooks <- totalbooks_language %>% 
+  summarise(sum(total_books_per_language)) %>% 
+  pull()
+
+totalbooks_language %>% 
+  mutate(percentage_of_total = total_books_per_language/totalbooks*100,
+         .before = total_books_per_language) %>% 
+  slice_max(percentage_of_total, n = 5)
+
+# English make up 94.8% of the total nr of books! Biased list..
+
+
+```
+
+# Question 3
+Do more recently published books receive a higher score than older books?
+```{r}
+# We start again with the min1_rating dataset
+books_min1_rating %>% 
+  select(title, authors, publication_date, average_rating) %>% 
+  # lets focus on years only
+  mutate(year = format(as.Date(books_min1_rating$publication_date,
+                               format="%m/%d/%Y"), "%Y"),
+                       .before = publication_date) %>% 
+# Let's just create 2 groups, before 2000 is 'old' and younger than 2000 'new'
+mutate(age = case_when(
+  year <2000 ~ "old",
+  year >=2000 ~ "young"
+), .after = year) %>% 
+ # filter(is.na(year)) # there are 2 books that have NA for year, but publication date is like normal?!
+  group_by(age) %>% 
+  summarise(average_rating = mean(average_rating))
+  
+# In conclusion: 'old' books have an average rating of 3.95, 'young' 3.93
+# old win!
+```
+
+#Question 4
+4 - Do books with a text-review receive a higher average rating than books without?
+```{r}
+# How many text_reviews are written, and how many ratings are given?
+books_min1_rating %>%  #tibble only including book ratings with minimal rate count of 1
+  select(title, authors, average_rating, ratings_count, text_reviews_count) %>% 
+  summarise(across(where(is.numeric), sum))
+# 6029199 text reviews in total, 199578299 ratings in total
+
+books_min1_rating %>%  
+  select(title, authors, average_rating, ratings_count, text_reviews_count) %>%
+  mutate(text_review_presence = if_else(text_reviews_count > 1, TRUE, FALSE)) %>% 
+  group_by(text_review_presence) %>% 
+ # filter(text_review_presence == TRUE) %>%  # We don't need this if using group_by
+  summarise(average_rate_with_text = mean(average_rating))
+
+#Books without a text review get on average a lower score than those with a text review
+# people that like a book are potentially more willing to invest time in writing a review
+# but tiny difference!
+
+```
+
+#Question 5
+5 - We don't like transphobes, so lets change all rates of JK Rowling to 0
+```{r}
+books %>% 
+  mutate(average_rating = if_else(stringr::str_detect(authors, "J.K. Rowling"),
+                                  0, average_rating)
+         ) %>% 
+  group_by(authors) %>% 
+  filter(stringr::str_detect(authors, "J.K. Rowling")) %>% 
+  summarise(average_rating = mean(average_rating))
+#All books (co-) authored by J.K. Rowling have a average_rating of 0: Success!
+```
+
