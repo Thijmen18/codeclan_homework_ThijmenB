@@ -1,0 +1,143 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Question 1
+Find the weather forecast for the next three days online. Create a list of lists 
+in which each inner list should be labelled with the name of the day of the week. 
+Each inner list should contain named elements telling you the temperature, chance 
+of rain and wind speed.
+
+```{r}
+weather <- list(
+  "Thursday" = list(temperature = 8, rain_chance = "20%", wind_speed = 9),
+  "Friday" = list(temperature = 9, rain_chance = "30%", wind_speed = 12),
+  "Saturday" = list(temperature = 12, rain_chance = "40%", wind_speed = 10)
+)
+
+weather
+```
+
+# Question 2
+Using the list you've just made find:
+
+  i. The chance of rain tomorrow
+  ii. The wind speed on the day after tomorrow
+  iii. The temperature tomorrow.
+
+```{r}
+#1
+weather$Thursday$rain_chance
+
+#2
+weather$Friday$wind_speed
+
+#3
+weather$Thursday$temperature
+```
+
+#Question 3
+Find a 14 day forecast online and create a matrix of the forecasts for 
+temperature, where each week is one row and columns correspond to days.
+
+You will want to give a name to the matrix you create.
+
+```{r}
+data <- c("Monday", 5, 6, "Tuesday", 9, 8, "Wednessday", 10, 12, "Thursday", 14,
+          15, "Friday", 18, 19, "Saturday", 19, 21, "Sunday", 22, 23)
+
+forecast <- matrix(data, nrow = 3, ncol = 7)
+
+forecast
+class(forecast)
+```
+
+#Question 4
+From the matrix you just made select:
+
+  i. The third day of the second week
+  ii. The whole second week
+  iii. The first, third and fifth days in both weeks.
+  
+```{r}
+#1
+forecast[3,3]
+
+#2
+forecast[2,]
+
+#3
+forecast[c(2, 3), c(1, 3, 5)]
+```
+  
+#Question 5
+Write a function that pre-appends "The answer is: " to any character input, while 
+for numeric input, it either just returns the number for numbers less than 10, or 
+divides the number by 10 for numbers greater than 10. For anything else return "Invalid input".
+
+```{r}
+x <- "hello"
+x <- 100
+x <- 9
+
+
+
+if(is.character(x) == TRUE | is.numeric(x) == TRUE) {
+  if(is.character(x) == TRUE){
+    print(paste("The answer is: ", x))
+  } else {
+    if(x < 10){
+    print(x)
+    }else{
+      new_value <- x/10
+      print(new_value)
+    }
+  }else{
+  print("Invalid input")
+  }
+}
+```
+
+
+
+
+# Question 6
+Write a function which checks if two vectors have the same elements. 
+
+* If they have the same elements in the same order, return "Exactly the same"
+* If they have the same elements but in a different order, return "The same"
+* If they don't have the same elements, return "Different".
+
+```{r}
+x <- c(2, "hello")
+Y <- c(2, "hello")
+z <- c(3, "bye")
+
+library(tidyverse)
+
+#same order use: identical(vec1, vec2)
+#for saem elements but different order: intersect() or %in%
+
+if(x %in% y == FALSE){
+  print("Different")
+}else{
+  if(identical(x, y) == TRUE){
+    print("Exactly the same")
+  }else{
+    print("The same")
+  }
+}
+
+
+```
+
+
+```{r}
+if(4 < 5){
+  print("yes")
+}else{
+  print("no")
+}
+```
+
