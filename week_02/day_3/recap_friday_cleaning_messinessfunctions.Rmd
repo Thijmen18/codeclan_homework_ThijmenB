@@ -1,0 +1,194 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Recap day 5 
+
+## Functions
+
+```{r}
+do_something <- function(what_does_our_function_take_in) {
+  # what the function does
+  
+  # what the function spits out
+  return()
+}
+```
+
+Functions are mini machines. They take in some stuff, do something to it and give out
+something
+
+For example: a function that adds: "David says..." to any input
+
+```{r}
+david_says <- function(any_input) {
+  return(paste("David says...", any_input))
+}
+
+david_says(any_input = "functions are good")
+david_says(14)
+```
+
+What would we actually use these for?
+- long/ often repeated tasks
+
+e.g.
+adds one [011000000100101010101111000000110]
+multiplier ( ..... adds one x times)
+...
+...
+...
+
+an example, we often copy/paste the following code
+
+```{r}
+library(tidyverse)
+
+iris %>% 
+  summarise(across(.fns = ~sum(is.na(.x))))
+
+mtcars %>% 
+  summarise(across(.fns = ~sum(is.na(.x))))
+
+#instead of copying, with a function we can automate this
+
+count_na <- function(data) {
+  data %>% 
+    summarise(across(.fns = ~sum(is.na(.x))))
+}
+
+iris %>% 
+  count_na()
+```
+
+We want to add more functionality to our function. We want to give users the chance 
+to say whether they only want numeric columns to be summarised across
+
+sometimes
+
+```{r}
+#all columns
+iris %>% 
+  summarise(across(everything(), .fns = ~sum(is.na(.x))))
+
+# just the numeric columns
+iris %>% 
+  summarise(across(where(is.numeric), .fns = ~sum(is.na(.x))))
+```
+
+```{r}
+# adding a default argument with param = argument
+count_na <- function(data, only_numeric_columns = FALSE) {
+  
+  
+  if (only_numeric_columns) {
+    # if they only want nas of numerics
+    na_s <- data %>% 
+      summarise(across(where(is.numeric), .fns = ~sum(is.na(.x))))
+  } else {
+    # otherwise return every column
+    na_s <- data %>% 
+      summarise(across(.fns = ~sum(is.na(.x))))
+  }
+
+  return(na_s)
+}
+
+
+iris %>% 
+  count_na(only_numeric_columns = TRUE)
+```
+
+Refactoring / Rewriting a nested function
+Question 5
+Write a function that pre-appends “The answer is:” to any character input
+while for numeric input, it either just returns the number for numbers less than 10, or divides the number by 10 for numbers greater than 10.
+For anything else return “Invalid input”.
+
+```{r}
+library(stringr)
+```
+
+
+How could this function be improved?
+Some extra things that might help
+
+-> early returns
+-> large functions, go through step by step, what the logic is.
+ideally write pseudocode.
+
+* before writing a function, write a step-by-step guide
+-> if the input is character
+    (do that things)
+-> if tinoput is number
+    (do this)
+-> otherwise
+    (INVALID)
+
+
+```{r}
+print_answer <- function(input_value) {
+ 
+  #guard clause (guarding against non character, non numeric inputs)
+ if ((!is.character(input_value)) & (!is.numeric(input_value))) {
+   return("invalid input")
+ }
+  # only characters and numerics are reaching this point
+  
+   # if the input is a character....
+  if (is.character(input_value)) {
+    return_value <- str_c("The answer is", input_value, sep = " ")
+  } else if (is.numeric(input_value)) {
+    # else if the input is a number...
+    if (input_value > 10) {
+     #if greater than 10
+       return_value <- input_value/10
+    } else if (input_value < 10) {
+      # if less than 10
+      return_value <- input_value
+    } else {
+      #otherwise
+      return_value <- "Invalid input"
+    }
+  } else {
+    return_value <- "Invalid input"
+  }
+  
+  return_value
+  
+}
+
+print_answer(10)
+```
+
+CUrrent less-good things about our function. 
+1. We assign invalid input in two cases (value is 10, or value isn't a character or number)
+2. Nesting (if's inside of an if)
+
+```{r}
+print_answer <- function(input_value) {
+ 
+  # if the input is a character....
+  if (is.character(input_value)) {
+    return_value <- str_c("The answer is", input_value, sep = " ")
+  } else if (is.numeric(input_value)) {
+    # else if the input is a number
+    if (input_value > 10) {
+      return_value <- input_value/10
+    } else if (input_value < 10) {
+      return_value <- input_value
+    } else {
+      return_value <- "Invalid input"
+    }
+  } else {
+    return_value <- "Invalid input"
+  }
+  
+  return_value
+  
+}
+
+print_answer(10)
+```
+

@@ -1752,215 +1752,48 @@ display: none;
 
 
 <!-- rnb-text-begin -->
-<div id="question-1" class="section level1">
-<h1>Question 1</h1>
-<p>Find the weather forecast for the next three days online. Create a
-list of lists in which each inner list should be labelled with the name
-of the day of the week. Each inner list should contain named elements
-telling you the temperature, chance of rain and wind speed.</p>
+<p>trial 2 - homework wk2_day3</p>
+<div id="question-5" class="section level1">
+<h1>Question 5</h1>
+<p>Write a function that pre-appends “The answer is:” to any character
+input, while for numeric input, it either just returns the number for
+numbers less than 10, or divides the number by 10 for numbers greater
+than 10. For anything else return “Invalid input”.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud2VhdGhlclxuXG5gYGAifQ== -->
-<pre class="r"><code>weather
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5gYGAifQ== -->
+<pre class="r"><code>library(tidyverse)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>It should give the following:</p>
+<p>Character input “hello” –&gt; “The answer is:”</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2l2ZV9hbnN3ZXIoVFJVRSlcblxuYGBgIn0= -->
+<pre class="r"><code>give_answer(TRUE)
 </code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiJFRodXJzZGF5XG4kVGh1cnNkYXkkdGVtcGVyYXR1cmVcblsxXSA4XG5cbiRUaHVyc2RheSRyYWluX2NoYW5jZVxuWzFdIFwiMjAlXCJcblxuJFRodXJzZGF5JHdpbmRfc3BlZWRcblsxXSA5XG5cblxuJEZyaWRheVxuJEZyaWRheSR0ZW1wZXJhdHVyZVxuWzFdIDlcblxuJEZyaWRheSRyYWluX2NoYW5jZVxuWzFdIFwiMzAlXCJcblxuJEZyaWRheSR3aW5kX3NwZWVkXG5bMV0gMTJcblxuXG4kU2F0dXJkYXlcbiRTYXR1cmRheSR0ZW1wZXJhdHVyZVxuWzFdIDEyXG5cbiRTYXR1cmRheSRyYWluX2NoYW5jZVxuWzFdIFwiNDAlXCJcblxuJFNhdHVyZGF5JHdpbmRfc3BlZWRcblsxXSAxMFxuIn0= -->
-<pre><code>$Thursday
-$Thursday$temperature
-[1] 8
-
-$Thursday$rain_chance
-[1] &quot;20%&quot;
-
-$Thursday$wind_speed
-[1] 9
-
-
-$Friday
-$Friday$temperature
-[1] 9
-
-$Friday$rain_chance
-[1] &quot;30%&quot;
-
-$Friday$wind_speed
-[1] 12
-
-
-$Saturday
-$Saturday$temperature
-[1] 12
-
-$Saturday$rain_chance
-[1] &quot;40%&quot;
-
-$Saturday$wind_speed
-[1] 10</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwiSW52YWxpZCBpbnB1dFwiXG4ifQ== -->
+<pre><code>[1] &quot;Invalid input&quot;</code></pre>
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
-</div>
-<div id="question-2" class="section level1">
-<h1>Question 2</h1>
-<p>Using the list you’ve just made find:</p>
-<ol style="list-style-type: lower-roman">
-<li>The chance of rain tomorrow</li>
-<li>The wind speed on the day after tomorrow</li>
-<li>The temperature tomorrow.</li>
-</ol>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuIzNcbndlYXRoZXIkVGh1cnNkYXkkdGVtcGVyYXR1cmVcblxuYGBgXG5gYGAifQ== -->
-<pre class="r"><code>```r
-#3
-weather$Thursday$temperature
-</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiWzFdIDhcbiJ9 --&gt;
-</code></pre>
-<p>[1] 8</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-#Question 3
-Find a 14 day forecast online and create a matrix of the forecasts for 
-temperature, where each week is one row and columns correspond to days.
-
-You will want to give a name to the matrix you create.
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuZm9yZWNhc3RcblxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-forecast
-</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiICAgICBbLDFdICAgICBbLDJdICAgICAgWywzXSAgICAgICAgIFssNF0gICAgICAgWyw1XSAgICAgWyw2XSAgICAgICBbLDddICAgIFxuWzEsXSBcXE1vbmRheVxcIFxcVHVlc2RheVxcIFxcV2VkbmVzc2RheVxcIFxcVGh1cnNkYXlcXCBcXEZyaWRheVxcIFxcU2F0dXJkYXlcXCBcXFN1bmRheVxcXG5bMixdIFxcNVxcICAgICAgXFw5XFwgICAgICAgXFwxMFxcICAgICAgICAgXFwxNFxcICAgICAgIFxcMThcXCAgICAgXFwxOVxcICAgICAgIFxcMjJcXCAgICBcblszLF0gXFw2XFwgICAgICBcXDhcXCAgICAgICBcXDEyXFwgICAgICAgICBcXDE1XFwgICAgICAgXFwxOVxcICAgICBcXDIxXFwgICAgICAgXFwyM1xcICAgIFxuIn0= --&gt;
-</code></pre>
-<pre><code> [,1]     [,2]      [,3]         [,4]       [,5]     [,6]       [,7]    </code></pre>
-<p>[1,]       <br />
-[2,] \5  \9  \10  \14  \18  \19  \22 <br />
-[3,] \6  \8  \12  \15  \19  \21  \23 </p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-#Question 4
-From the matrix you just made select:
-
-  i. The third day of the second week
-  ii. The whole second week
-  iii. The first, third and fifth days in both weeks.
-  
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuIzNcbmZvcmVjYXN0W2MoMiwgMyksIGMoMSwgMywgNSldXG5cbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-#3
-forecast[c(2, 3), c(1, 3, 5)]
-</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiICAgICBbLDFdIFssMl0gWywzXVxuWzEsXSBcXDVcXCAgXFwxMFxcIFxcMThcXFxuWzIsXSBcXDZcXCAgXFwxMlxcIFxcMTlcXFxuIn0= --&gt;
-</code></pre>
-<pre><code> [,1] [,2] [,3]</code></pre>
-<p>[1,] \5  \10 \18<br />
-[2,] \6  \12 \19<br />
-</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-  
-#Question 5
-Write a function that pre-appends &quot;The answer is: &quot; to any character input, while 
-for numeric input, it either just returns the number for numbers less than 10, or 
-divides the number by 10 for numbers greater than 10. For anything else return &quot;Invalid input&quot;.
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2l2ZV9hbnN3ZXIoMTUpXG5cbmBgYCJ9 --&gt;
-
-```r
-give_answer(15)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxueFxuXG5gYGAifQ== -->
+<pre class="r"><code>x
 </code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDEuNVxuIn0= -->
-<pre><code>[1] 1.5</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-</div>
-<div id="question-6" class="section level1">
-<h1>Question 6</h1>
-<p>Write a function which checks if two vectors have the same
-elements.</p>
-<p>If they have the same elements in the same order, return “Exactly the
-same” If they have the same elements but in a different order, return
-“The same” If they don’t have the same elements, return “Different”.</p>
-<p>Hint: - check if 2 vectors have same elements in different order by
-using sort(), to sort first and check if they are equal - check all()
-function</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudmVjdG9yX2NoZWNrKGUsIGYpXG5cbmBgYCJ9 -->
-<pre class="r"><code>vector_check(e, f)
-</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwiRXhhY3RseSB0aGUgc2FtZVwiXG4ifQ== -->
-<pre><code>[1] &quot;Exactly the same&quot;</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwiaGVsbG9cIlxuIn0= -->
+<pre><code>[1] &quot;hello&quot;</code></pre>
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKIyBRdWVzdGlvbiAxCkZpbmQgdGhlIHdlYXRoZXIgZm9yZWNhc3QgZm9yIHRoZSBuZXh0IHRocmVlIGRheXMgb25saW5lLiBDcmVhdGUgYSBsaXN0IG9mIGxpc3RzIAppbiB3aGljaCBlYWNoIGlubmVyIGxpc3Qgc2hvdWxkIGJlIGxhYmVsbGVkIHdpdGggdGhlIG5hbWUgb2YgdGhlIGRheSBvZiB0aGUgd2Vlay4gCkVhY2ggaW5uZXIgbGlzdCBzaG91bGQgY29udGFpbiBuYW1lZCBlbGVtZW50cyB0ZWxsaW5nIHlvdSB0aGUgdGVtcGVyYXR1cmUsIGNoYW5jZSAKb2YgcmFpbiBhbmQgd2luZCBzcGVlZC4KCmBgYHtyfQp3ZWF0aGVyIDwtIGxpc3QoCiAgIlRodXJzZGF5IiA9IGxpc3QodGVtcGVyYXR1cmUgPSA4LCByYWluX2NoYW5jZSA9ICIyMCUiLCB3aW5kX3NwZWVkID0gOSksCiAgIkZyaWRheSIgPSBsaXN0KHRlbXBlcmF0dXJlID0gOSwgcmFpbl9jaGFuY2UgPSAiMzAlIiwgd2luZF9zcGVlZCA9IDEyKSwKICAiU2F0dXJkYXkiID0gbGlzdCh0ZW1wZXJhdHVyZSA9IDEyLCByYWluX2NoYW5jZSA9ICI0MCUiLCB3aW5kX3NwZWVkID0gMTApCikKCndlYXRoZXIKYGBgCgojIFF1ZXN0aW9uIDIKVXNpbmcgdGhlIGxpc3QgeW91J3ZlIGp1c3QgbWFkZSBmaW5kOgoKICBpLiBUaGUgY2hhbmNlIG9mIHJhaW4gdG9tb3Jyb3cKICBpaS4gVGhlIHdpbmQgc3BlZWQgb24gdGhlIGRheSBhZnRlciB0b21vcnJvdwogIGlpaS4gVGhlIHRlbXBlcmF0dXJlIHRvbW9ycm93LgoKYGBge3J9CiMxCndlYXRoZXIkVGh1cnNkYXkkcmFpbl9jaGFuY2UKCiMyCndlYXRoZXIkRnJpZGF5JHdpbmRfc3BlZWQKCiMzCndlYXRoZXIkVGh1cnNkYXkkdGVtcGVyYXR1cmUKYGBgCgojUXVlc3Rpb24gMwpGaW5kIGEgMTQgZGF5IGZvcmVjYXN0IG9ubGluZSBhbmQgY3JlYXRlIGEgbWF0cml4IG9mIHRoZSBmb3JlY2FzdHMgZm9yIAp0ZW1wZXJhdHVyZSwgd2hlcmUgZWFjaCB3ZWVrIGlzIG9uZSByb3cgYW5kIGNvbHVtbnMgY29ycmVzcG9uZCB0byBkYXlzLgoKWW91IHdpbGwgd2FudCB0byBnaXZlIGEgbmFtZSB0byB0aGUgbWF0cml4IHlvdSBjcmVhdGUuCgpgYGB7cn0KZGF0YSA8LSBjKCJNb25kYXkiLCA1LCA2LCAiVHVlc2RheSIsIDksIDgsICJXZWRuZXNzZGF5IiwgMTAsIDEyLCAiVGh1cnNkYXkiLCAxNCwKICAgICAgICAgIDE1LCAiRnJpZGF5IiwgMTgsIDE5LCAiU2F0dXJkYXkiLCAxOSwgMjEsICJTdW5kYXkiLCAyMiwgMjMpCgpmb3JlY2FzdCA8LSBtYXRyaXgoZGF0YSwgbnJvdyA9IDMsIG5jb2wgPSA3KQoKZm9yZWNhc3QKY2xhc3MoZm9yZWNhc3QpCmBgYAoKI1F1ZXN0aW9uIDQKRnJvbSB0aGUgbWF0cml4IHlvdSBqdXN0IG1hZGUgc2VsZWN0OgoKICBpLiBUaGUgdGhpcmQgZGF5IG9mIHRoZSBzZWNvbmQgd2VlawogIGlpLiBUaGUgd2hvbGUgc2Vjb25kIHdlZWsKICBpaWkuIFRoZSBmaXJzdCwgdGhpcmQgYW5kIGZpZnRoIGRheXMgaW4gYm90aCB3ZWVrcy4KICAKYGBge3J9CiMxCmZvcmVjYXN0WzMsM10KCiMyCmZvcmVjYXN0WzIsXQoKIzMKZm9yZWNhc3RbYygyLCAzKSwgYygxLCAzLCA1KV0KYGBgCiAgCiNRdWVzdGlvbiA1CldyaXRlIGEgZnVuY3Rpb24gdGhhdCBwcmUtYXBwZW5kcyAiVGhlIGFuc3dlciBpczogIiB0byBhbnkgY2hhcmFjdGVyIGlucHV0LCB3aGlsZSAKZm9yIG51bWVyaWMgaW5wdXQsIGl0IGVpdGhlciBqdXN0IHJldHVybnMgdGhlIG51bWJlciBmb3IgbnVtYmVycyBsZXNzIHRoYW4gMTAsIG9yIApkaXZpZGVzIHRoZSBudW1iZXIgYnkgMTAgZm9yIG51bWJlcnMgZ3JlYXRlciB0aGFuIDEwLiBGb3IgYW55dGhpbmcgZWxzZSByZXR1cm4gIkludmFsaWQgaW5wdXQiLgoKYGBge3J9CnggPC0gImhlbGxvIgp4IDwtIDEwMAp4IDwtIDkKCmdpdmVfYW5zd2VyIDwtIGZ1bmN0aW9uKHgpewppZihpcy5jaGFyYWN0ZXIoeCkgPT0gVFJVRSB8IGlzLm51bWVyaWMoeCkgPT0gVFJVRSkgewppZihpcy5udW1lcmljKHgpID09IFRSVUUpewogIGlmKHggPT0gMTApewogICAgcHJpbnQoIkludmFsaWQgaW5wdXQiKQogIH0KICBpZih4IDwgMTApewogICAgcHJpbnQoeCkKICB9CiAgICBpZih4ID4gMTApewogICAgICBuZXdfdmFsdWUgPC0geC8xMAogICAgICBwcmludChuZXdfdmFsdWUpCiAgICB9CmlmKGlzLmNoYXJhY3Rlcih4KSA9PSBUUlVFKXsKICBwcmludChwYXN0ZSgiVGhlIGFuc3dlciBpczogIiwgeCkpCn0KfQplbHNlewogIHByaW50KCJJbnZhbGlkIGlucHV0IikKfQp9Cn0KCmdpdmVfYW5zd2VyKDkpCmdpdmVfYW5zd2VyKCJoZWxsbyIpCmdpdmVfYW5zd2VyKDEwKQpnaXZlX2Fuc3dlcigxNSkKYGBgCgoKIyBRdWVzdGlvbiA2CldyaXRlIGEgZnVuY3Rpb24gd2hpY2ggY2hlY2tzIGlmIHR3byB2ZWN0b3JzIGhhdmUgdGhlIHNhbWUgZWxlbWVudHMuCgpJZiB0aGV5IGhhdmUgdGhlIHNhbWUgZWxlbWVudHMgaW4gdGhlIHNhbWUgb3JkZXIsIHJldHVybiDigJxFeGFjdGx5IHRoZSBzYW1l4oCdCklmIHRoZXkgaGF2ZSB0aGUgc2FtZSBlbGVtZW50cyBidXQgaW4gYSBkaWZmZXJlbnQgb3JkZXIsIHJldHVybiDigJxUaGUgc2FtZeKAnQpJZiB0aGV5IGRvbuKAmXQgaGF2ZSB0aGUgc2FtZSBlbGVtZW50cywgcmV0dXJuIOKAnERpZmZlcmVudOKAnS4KCkhpbnQ6Ci0gY2hlY2sgaWYgMiB2ZWN0b3JzIGhhdmUgc2FtZSBlbGVtZW50cyBpbiBkaWZmZXJlbnQgb3JkZXIgYnkgdXNpbmcgc29ydCgpLCB0byBzb3J0IGZpcnN0IGFuZCBjaGVjayBpZiB0aGV5IGFyZSBlcXVhbAotIGNoZWNrIGFsbCgpIGZ1bmN0aW9uCgpgYGB7cn0KdmVjdG9yX2NoZWNrIDwtIGZ1bmN0aW9uKHZlY3RvcjEsIHZlY3RvcjIpIHsKICAKICBpZihhbGwodmVjdG9yMSA9PSB2ZWN0b3IyKSkgewogICAgCiAgcmV0dXJuKCJFeGFjdGx5IHRoZSBzYW1lIikKICB9CiAgCiAgaWYoYWxsKHNvcnQodmVjdG9yMSkgPT0gc29ydCh2ZWN0b3IyKSkpIHsKICAgIAogIHByaW50KCJUaGUgc2FtZSIpCn0KICBlbHNlIHsKICAgIAogIHByaW50KCJEaWZmZXJlbnQiKQp9Cn0KCiNTYW1lIG9yZGVyOgp4IDwtIGMoMSwgNSwgOCkKeSA8LSBjKDEsIDUsIDgpCiN3cm9uZyBvcmRlcjoKYSA8LSBjKDIsIDUsIDkpCmIgPC0gYyg5LCAyLCA1KQojIGRpZmZlcmVudApjIDwtIGMoMSwgNSwgOCkKZCA8LSBjKDQsIDYsIDMpCiN0ZXh0CmUgPC0gYygiaGVsbG8iLCAiYnllIiwgImJhbmFuYSIpCmYgPC0gYygiaGVsbG8iLCAiYnllIiwgImJhbmFuYSIpCgp2ZWN0b3JfY2hlY2soeCwgeSkKdmVjdG9yX2NoZWNrKGEsIGIpCnZlY3Rvcl9jaGVjayhjLCBkKQp2ZWN0b3JfY2hlY2soZSwgZikKCmBgYAoK</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKdHJpYWwgMiAtIGhvbWV3b3JrIHdrMl9kYXkzCgojIFF1ZXN0aW9uIDUKV3JpdGUgYSBmdW5jdGlvbiB0aGF0IHByZS1hcHBlbmRzICJUaGUgYW5zd2VyIGlzOiAiIHRvIGFueSBjaGFyYWN0ZXIgaW5wdXQsIHdoaWxlIApmb3IgbnVtZXJpYyBpbnB1dCwgaXQgZWl0aGVyIGp1c3QgcmV0dXJucyB0aGUgbnVtYmVyIGZvciBudW1iZXJzIGxlc3MgdGhhbiAxMCwgb3IgCmRpdmlkZXMgdGhlIG51bWJlciBieSAxMCBmb3IgbnVtYmVycyBncmVhdGVyIHRoYW4gMTAuIEZvciBhbnl0aGluZyBlbHNlIHJldHVybiAiSW52YWxpZCBpbnB1dCIuCgpgYGB7cn0KbGlicmFyeSh0aWR5dmVyc2UpCmBgYAoKSXQgc2hvdWxkIGdpdmUgdGhlIGZvbGxvd2luZzoKCkNoYXJhY3RlciBpbnB1dAoiaGVsbG8iIC0tPiAiVGhlIGFuc3dlciBpczogIgoKYGBge3J9CnggPC0gImhlbGxvIgp4IDwtIDkKeCA8LSAxNQp4IDwtIDEwCnggPC0gCgp4CiAgCmdpdmVfYW5zd2VyIDwtIGZ1bmN0aW9uKHgpewppZihpcy5jaGFyYWN0ZXIoeCkpIHsKICByZXR1cm5fdmFsdWUgPC0gc3RyX2MoIlRoZSBhbnN3ZXIgaXM6ICIsIHgpCn1lbHNlIGlmKGlzLm51bWVyaWMoeCkpewppZih4PjEwKXsKICB2YWx1ZSA8LSB4LzEwCiAgcmV0dXJuX3ZhbHVlIDwtIHgKfWVsc2UgaWYoeDwxMCl7CiAgcmV0dXJuX3ZhbHVlIDwtIHgKfQplbHNlewogIHJldHVybl92YWx1ZSA8LSAiSW52YWxpZCBpbnB1dCIKfQp9CnJldHVybl92YWx1ZQp9CgpnaXZlX2Fuc3dlcigiaGVsbG8iKQpnaXZlX2Fuc3dlcig5KQpnaXZlX2Fuc3dlcigxNSkKZ2l2ZV9hbnN3ZXIoMTApCmdpdmVfYW5zd2VyKFRSVUUpCgojQ2hhcmFjdGVyIGlucHV0CiMiaGVsbG8iIC0tPiAiVGhlIGFuc3dlciBpczogIgoKI251bWVyaWMgaW5wdXQKIyA5IC0tPiA5CiMgMTIgLS0+IDEyLzEwCgojc29tZXRoaW5nIGVsc2UKI1RSVUUgLS0+IEludmFsaWQgaW5wdXQKCgoKYGBgCgpgYGB7cn0KeApgYGAKCg==</div>
 
 
 
@@ -2007,7 +1840,7 @@ $(document).ready(function () {
 <!-- code folding -->
 <script>
 $(document).ready(function () {
-  window.initializeSourceEmbed("homework_wk2_day3_thijmen.Rmd");
+  window.initializeSourceEmbed("trial2.Rmd");
   window.initializeCodeFolding("show" === "show");
 });
 </script>

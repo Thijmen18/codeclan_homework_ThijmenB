@@ -1,0 +1,71 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+trial 2 - homework wk2_day3
+
+# Question 5
+Write a function that pre-appends "The answer is: " to any character input, while 
+for numeric input, it either just returns the number for numbers less than 10, or 
+divides the number by 10 for numbers greater than 10. For anything else return "Invalid input".
+
+```{r}
+library(tidyverse)
+```
+
+It should give the following:
+
+Character input
+"hello" --> "The answer is: "
+
+```{r}
+x <- "hello"
+x <- 9
+x <- 15
+x <- 10
+x <- 
+
+x
+  
+give_answer <- function(x){
+if(is.character(x)) {
+  return_value <- str_c("The answer is: ", x)
+}else if(is.numeric(x)){
+if(x>10){
+  value <- x/10
+  return_value <- x
+}else if(x<10){
+  return_value <- x
+}
+else{
+  return_value <- "Invalid input"
+}
+}
+return_value
+}
+
+give_answer("hello")
+give_answer(9)
+give_answer(15)
+give_answer(10)
+give_answer(TRUE)
+
+#Character input
+#"hello" --> "The answer is: "
+
+#numeric input
+# 9 --> 9
+# 12 --> 12/10
+
+#something else
+#TRUE --> Invalid input
+
+
+
+```
+
+```{r}
+x
+```
+

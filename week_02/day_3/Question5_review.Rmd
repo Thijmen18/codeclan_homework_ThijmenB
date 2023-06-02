@@ -1,0 +1,93 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework review 
+
+# Question 5
+Write a function that pre-appends "The answer is: " to any character input, while 
+for numeric input, it either just returns the number for numbers less than 10, or 
+divides the number by 10 for numbers greater than 10. For anything else return "Invalid input".
+
+What is going on?
+
+input -> function -> output
+"fourteen" ---> "The answer is fourteen"
+"14" ---> "The answer is 14"
+
+20 ---> 2 (if input is >10 --> input/10)
+5 ----> 5 (if input <10 --> input)
+
+10 --> "invalid input"
+TRUE --> "Invalid input"
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+input_value <- 14
+
+# case 1: character input --> "The answer is _"
+
+if(is.character(input_value)) {
+ str_c("The answer is", input_value, sep = " ")
+}
+
+if(input_value > 10) {
+  input_value/10
+}
+
+if(input_value < 10){
+  input_value
+}
+
+
+
+#
+#10 --> "invalid input"
+#TRUE --> "Invalid input"
+
+```
+
+function starts
+
+test if whether character or not
+
+test if character is number
+  test if divisible by 10
+
+   -> yes --> /
+
+   -> no --> x
+
+else
+  -> invalid
+
+```{r}
+print_answer <- function(input_value) {
+  
+  if(is.character(input_value)) {
+    return_value <- str_c("The answer is", input_value, sep = " ")
+  } else if (is.numeric(input_value)) {
+    if(input_value > 10) {
+      return_value <- input_value /10
+    }else if (input_value <10) {
+      return_value <- input_value
+    }else{
+      return_value <- "Invalid input"
+    }
+    
+  } else {
+    return_value <- "Invalid input"
+  }
+  return_value
+}
+
+print_answer(14)
+print_answer("fourteen")
+print_answer(10)
+```
+

@@ -81,63 +81,82 @@ x <- "hello"
 x <- 100
 x <- 9
 
-
-
+give_answer <- function(x){
 if(is.character(x) == TRUE | is.numeric(x) == TRUE) {
-  if(is.character(x) == TRUE){
-    print(paste("The answer is: ", x))
-  } else {
-    if(x < 10){
+if(is.numeric(x) == TRUE){
+  if(x == 10){
+    print("Invalid input")
+  }
+  if(x < 10){
     print(x)
-    }else{
+  }
+    if(x > 10){
       new_value <- x/10
       print(new_value)
     }
-  }else{
-  print("Invalid input")
-  }
+if(is.character(x) == TRUE){
+  print(paste("The answer is: ", x))
 }
+}
+else{
+  print("Invalid input")
+}
+}
+}
+
+give_answer(9)
+give_answer("hello")
+give_answer(10)
+give_answer(15)
 ```
-
-
 
 
 # Question 6
-Write a function which checks if two vectors have the same elements. 
+Write a function which checks if two vectors have the same elements.
 
-* If they have the same elements in the same order, return "Exactly the same"
-* If they have the same elements but in a different order, return "The same"
-* If they don't have the same elements, return "Different".
+If they have the same elements in the same order, return “Exactly the same”
+If they have the same elements but in a different order, return “The same”
+If they don’t have the same elements, return “Different”.
+
+Hint:
+- check if 2 vectors have same elements in different order by using sort(), to sort first and check if they are equal
+- check all() function
 
 ```{r}
-x <- c(2, "hello")
-Y <- c(2, "hello")
-z <- c(3, "bye")
-
-library(tidyverse)
-
-#same order use: identical(vec1, vec2)
-#for saem elements but different order: intersect() or %in%
-
-if(x %in% y == FALSE){
-  print("Different")
-}else{
-  if(identical(x, y) == TRUE){
-    print("Exactly the same")
-  }else{
-    print("The same")
+vector_check <- function(vector1, vector2) {
+  
+  if(all(vector1 == vector2)) {
+    
+  return("Exactly the same")
   }
+  
+  if(all(sort(vector1) == sort(vector2))) {
+    
+  print("The same")
+}
+  else {
+    
+  print("Different")
+}
 }
 
+#Same order:
+x <- c(1, 5, 8)
+y <- c(1, 5, 8)
+#wrong order:
+a <- c(2, 5, 9)
+b <- c(9, 2, 5)
+# different
+c <- c(1, 5, 8)
+d <- c(4, 6, 3)
+#text
+e <- c("hello", "bye", "banana")
+f <- c("hello", "bye", "banana")
 
-```
+vector_check(x, y)
+vector_check(a, b)
+vector_check(c, d)
+vector_check(e, f)
 
-
-```{r}
-if(4 < 5){
-  print("yes")
-}else{
-  print("no")
-}
 ```
 
