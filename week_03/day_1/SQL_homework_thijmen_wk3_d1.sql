@@ -148,6 +148,24 @@ WHERE first_name IS NOT NULL
 		AND department IS NOT NULL
 ORDER BY badge_label;
 
+-- extension of extension
+-- For the extension check postgreSQL TO_CHAR() function online. 
+SELECT
+  first_name,
+  last_name,
+  department,
+  start_date,
+  CONCAT(
+    first_name, ' ', last_name, ' - ', department, ' (joined ', 
+    TO_CHAR(start_date, 'FMMonth'), ' ', TO_CHAR(start_date, 'YYYY'), ')'
+  ) AS badge_label
+FROM employees
+WHERE 
+  first_name IS NOT NULL AND 
+  last_name IS NOT NULL AND 
+  department IS NOT NULL AND
+  start_date IS NOT NULL
+
 
 -- Question 18
 -- Return the first_name, last_name and salary of all employees together with a new column 
@@ -160,6 +178,18 @@ CASE
 	WHEN salary >= 40000 THEN 'low'
 END
 AS salary_class
+FROM employees
+
+-- From answers homework:
+
+SELECT 
+  first_name, 
+  last_name, 
+  CASE 
+    WHEN salary < 40000 THEN 'low'
+    WHEN salary IS NULL THEN NULL
+    ELSE 'high' 
+  END AS salary_class
 FROM employees
 
 
