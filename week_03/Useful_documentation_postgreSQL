@@ -1,3 +1,7 @@
 Useful doc:
 
 https://www.postgresql.org/docs/current/functions-formatting.html
+
+not always useful but sometime:
+www.sqlstyle.guide
+*it contains a list with functions reserved for ANSI SQL, postgreSQL, mySQL (kind of base SQL)
