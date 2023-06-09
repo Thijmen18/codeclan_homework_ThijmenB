@@ -209,6 +209,12 @@ CAST(sum(CAST(grade = 1 AS integer)) AS REAL)/ cast(COUNT(*) AS REAL) AS ratio_g
 FROM employees
 GROUP BY department;
 
+-- from answers:
+SELECT 
+  department, 
+  SUM(CAST(grade = '1' AS INT)) / CAST(COUNT(id) AS REAL) AS prop_grade_1 
+FROM employees 
+GROUP BY department;
 
 
 
@@ -221,13 +227,3 @@ GROUP BY department;
 
 
 
-
-
-
-
-
-
-
-Question 16. [Tough]
-Find the proportion of employees in each department who are grade 1. 
- Hints
