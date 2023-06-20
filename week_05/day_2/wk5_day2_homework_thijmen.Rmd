@@ -1,0 +1,193 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework week 5 - day 2 - Thijmen
+
+## Question 1
+Load in the libraries you need, and look at the backpack data. 
+Take note of variable names and dimensions.
+```{r}
+library(tidyverse)
+library(CodeClanData)
+
+names(backpack)
+```
+```{r}
+dim(backpack)
+head(backpack)
+view(backpack)
+```
+
+## Question 2
+What is the distribution of backpack weights that students are carrying? 
+Choose an appropriate graph to show the distribution.
+
+```{r}
+backpack %>% 
+  ggplot(aes(x = backpack_weight)) +
+  geom_histogram(binwidth = 1, col = "white") +
+  scale_x_continuous(breaks = 1:35)
+```
+This graph shows the distribution of backpack weights among students. 
+Most students have a backpack weight of 10 kg.
+
+# Question 3
+Are there differences in backpack weight between sex?
+
+```{r}
+backpack %>% 
+  ggplot(aes(x = backpack_weight)) +
+  geom_histogram(binwidth = 1, col = "white") +
+  scale_x_continuous(breaks = 1:35) +
+  facet_grid(~ sex) +
+  coord_flip()
+```
+This histogram shows the distribution of backpack weights among students split per gender. 
+We can see that in females, most common backpack weight (10 students) is 10 kg, 
+while this is 11 kg in male students.
+Top bakcpack weight is 35 kg, caried around by a male student.
+
+# Question 4
+What is the relationship between body weight and backpack weight?
+
+```{r}
+backpack %>% 
+  ggplot(aes(x = backpack_weight, y = body_weight)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)
+
+  
+```
+This scatterplot with linear regression line shows that there is a slight positive relationship
+between backpack_weight and body_weight.
+Heavier students tend to carry slightly heavier bakcpacks than their lighter students.
+
+* Obviously we should need to statistically test if this is a significant positive relationship!
+
+# Question 5
+Is this relationship different between men and women? 
+Choose an appropriate plot and interpret your findings.
+
+```{r}
+backpack %>% 
+  ggplot(aes(x = backpack_weight, y = body_weight)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE) +
+  facet_grid(~ sex)
+```
+Breaking up the scatterplot by deviding them by sex shows that this positive relationship 
+is slightly stronger among female students. While overall body weight of male students is higher.
+
+* Obviously we should need to statistically test if this is a significant positive relationship!
+
+# Question 6
+What proportion of students report back pain?
+
+```{r}
+backpack1 <- backpack %>% 
+  mutate(back_problems = recode(back_problems,
+                               "1" = "Back problem",
+                                "0" = "No back problem"))
+
+backpack1 %>% 
+ggplot(aes(x = back_problems, fill = back_problems)) +
+  geom_bar(position = "stack") +
+  xlab("Back issues among students") +
+  ylab("Percentage") +
+  ggtitle("Percentage students with back issues")
+```
+Based on the barplot, we can see that the proportion of students with backpain is 32%
+
+```{r}
+# or alternatively, and much quicker:
+# use after_stat(prop) as Y variable!
+
+backpack1 %>% 
+ggplot(aes(x = back_problems, y = after_stat(prop), group = 1)) +
+  geom_bar() +
+  xlab("Back issues among students") +
+  ylab("Percentage") +
+  ggtitle("Percentage students with back issues") +
+  scale_y_continuous(labels = scales::percent_format())
+
+```
+
+
+
+
+# Question 7
+Is this proportion different between men and women?
+
+```{r}
+backpack1 %>% 
+ggplot(aes(x = back_problems, y = after_stat(prop), group = 1)) +
+  geom_bar(position = "stack") +
+  xlab("Back issues among students") +
+  ylab("Percentage") +
+  ggtitle("Percentage students with back issues") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  facet_grid(~ sex) 
+```
+Yes this is different! Among females: ~42% have backpain, while this is ~19% among males!
+
+# Question 8
+Now you’ve investigated your data separately, create plots to describe the 
+relationship between backpack weight, body weight, gender and reported backpain.
+
+Try both backpack_weight and body_weight as well as the ratio.
+
+Hint: faceting would be useful here.
+
+```{r}
+backpack1 %>% 
+  ggplot(aes(x = backpack_weight, y = body_weight, group = back_problems)) +
+  geom_point() +
+  facet_grid(back_problems ~ sex) +
+  geom_smooth(method = lm, se = FALSE) 
+
+# scatterplot shows that there is a slight positive relation between body_weight 
+# and back_weight among females with and those without back_problems. 
+# This relation is slightly stronger among females without back problems.
+
+# However, 
+# scatterplot shows that there is a slight negative relation between body_weight 
+# and back_weight among males with back_problems. While a slight positive relation exists 
+# among males without back problems.
+
+# Obviously we should statistically test if this is a significant relationship!
+
+```
+## Extension
+## Question 1
+Does reported backpain differ across the year groups? Ignore year 0 in your data.
+
+```{r}
+backpack1 %>% 
+  filter(year != 0) %>% 
+  ggplot(aes(x = back_problems)) +
+  geom_bar() +
+  facet_wrap(~ year) +
+  ggtitle("reported back pain per school year") +
+  scale_y_continuous(breaks = 1:20)
+  
+
+# Yes, there is a large variation in reported back pain per year. 
+# Varying from no reported back pain in year 6 to almost 50% of students with back pain in year 3 with 
+# 12 reported cases vs 15 no_back pain cases.
+```
+
+## Question 2
+Is there a difference between how heavy the bags those in different years carry?
+```{r}
+backpack %>% 
+   filter(year != 0) %>%
+  ggplot(aes(x = backpack_weight)) +
+  geom_histogram(binwidth = 1, col = "white") +
+  facet_wrap(~ year) +
+  ggtitle("backpack weight distribution divided per year") +
+  scale_x_continuous(breaks = c(1, 5, 10, 15, 20, 25, 30, 35))
+
+```
+

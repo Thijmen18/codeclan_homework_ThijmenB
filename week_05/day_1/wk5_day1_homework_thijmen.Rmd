@@ -112,6 +112,15 @@ qb_device_data %>%
   geom_line() +
   facet_wrap(~ device, nrow = 1)
 
+# Based on the answers, I am missing 
+
+qb_device_data %>% 
+  mutate(total_hours = (hours+(mins/60))) %>%
+  ggplot() +
+  aes(x = total_hours, y = counts) +
+  geom_line() +
+  facet_grid(id ~ device)
+
 ```
 
 ## Part 2: Question 1
@@ -242,5 +251,54 @@ qb_device_data %>%
       "competitor2" = "#B6A7B5",
       "competitor3" = "#F9A472"
     ))
+
+# Based on the answers, I am missing 
+col_scheme <- c("#E89FE9", "#50434F", "#B6A7B5", "#F9A472", "#BD7040")
+
+theme_qb <- 
+  theme(
+    text = element_text(size = 12),
+    title = element_text(size = 14),
+    axis.text = element_text(size = 10),
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_line(colour = "grey90", linetype = "dashed")
+  )
+
+#trying to edit my code based on answers
+qb_device_data %>% 
+  mutate(total_hours = (hours+(mins/60))) %>% 
+  ggplot() +
+  aes(x = total_hours, y = counts, colour = device) + #don't forget the colour=device, otherwise it does not know what to colour!!
+  geom_line() +
+  facet_grid(id ~ device) +
+  ggtitle("Number of steps counted competitors vs. qikbit 1\n") +
+  ylab("Steps counted\n") +
+  xlab("Hours counted") +
+  scale_colour_manual(values = col_scheme) +
+  theme_qb
+
+
+#From the answers:
+
+qb_device_data <- 
+mutate(qb_device_data, decimal_hour = hours + (mins/60))
+
+ggplot(qb_device_data) +
+  aes(x = decimal_hour, y = counts, colour = device) +
+  geom_line(show.legend = FALSE) + 
+  scale_x_continuous("Time (hours)") +
+  scale_y_continuous("Steps") +
+  facet_grid(id ~ device) +
+  scale_colour_manual(values = col_scheme) +
+  theme_qb +
+  ggtitle("Comparison between KwikBit Unit1 and Competitors for 5 individuals")
+```
+
+```{r}
+#Further useful:
+scale_x_date(date_breaks = "1 month", date_labels = "%d-%b-%y") # (to split dates by month in the labels)
+
+
+
 ```
 
