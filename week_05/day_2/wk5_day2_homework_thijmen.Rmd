@@ -93,10 +93,21 @@ backpack1 <- backpack %>%
 
 backpack1 %>% 
 ggplot(aes(x = back_problems, fill = back_problems)) +
-  geom_bar(position = "stack") +
+  geom_bar() +     # use position = "fill" for proportions (stacks can't go higher than 1)
   xlab("Back issues among students") +
   ylab("Percentage") +
-  ggtitle("Percentage students with back issues")
+  ggtitle("Percentage students with back issues") +
+  theme(legend.position = "none") # or within the geom line: legend.position = "none"
+
+
+# to get the bar stacked on top of each other, leave x empty and use the 'fill = ' argument
+#backpack %>% 
+#  ggplot(aes(x = "", fill = back_problems)) +
+#  geom_bar(position = "fill") +
+#  theme_minimal() +
+#  labs(y = "proportion",
+#       x = "proportion of students with back pain") +
+#  scale_y_continuous(labels = scales::percent)
 ```
 Based on the barplot, we can see that the proportion of students with backpain is 32%
 
@@ -106,7 +117,7 @@ Based on the barplot, we can see that the proportion of students with backpain i
 
 backpack1 %>% 
 ggplot(aes(x = back_problems, y = after_stat(prop), group = 1)) +
-  geom_bar() +
+  geom_bar() +    
   xlab("Back issues among students") +
   ylab("Percentage") +
   ggtitle("Percentage students with back issues") +

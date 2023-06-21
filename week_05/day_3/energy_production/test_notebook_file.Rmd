@@ -1,0 +1,81 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(CodeClanData)
+```
+
+```{r}
+CodeClanData::energy_scotland
+
+names(energy_scotland)
+```
+
+```{r}
+energy_scotland %>% 
+  distinct(Sector) 
+
+energy_scotland %>% 
+  distinct(Year)
+```
+```{r}
+energy_scotland %>% 
+  filter(Sector == "Renewables") %>% 
+  ggplot() +
+  aes(x = Year, y = EnergyProd) +
+  geom_col(fill = "yellow", colour = "black") +
+  xlab("\nEnergy Production (KWh)") +
+  ylab("Year\n") +
+  ggtitle("Energy Production in Scotland per Sector of Choice\n") +
+  theme_minimal() +
+  scale_x_continuous(breaks = 2005:2017)
+```
+
+```{r}
+energy_scotland %>% 
+  filter(Year == "2015") %>% 
+  ggplot() +
+  aes(x = Sector, y = EnergyProd) +
+  geom_col(fill = "darkgreen", colour = "black") +
+  coord_flip() +
+  xlab("\nEnergy Production (KWh)") +
+  ylab("Setor\n") +
+  ggtitle("Energy Production in Scotland per Sector\n") +
+  theme(
+    text = element_text(size = 14),
+    title = element_text(size = 15),
+    axis.text = element_text(size = 12),
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_line(colour = "grey90", linetype = "dashed")
+  )
+  
+  
+  
+  ggplot() +
+  aes(x = Year, y = EnergyProd) +
+  geom_col(fill = "yellow", colour = "black") +
+  xlab("\nEnergy Production (KWh)") +
+  ylab("Year\n") +
+  ggtitle("Energy Production in Scotland per Sector of Choice\n") +
+  theme_minimal() +
+  scale_x_continuous(breaks = 2005:2017)
+```
+```{r}
+energy_scotland %>%
+  ggplot() +
+  aes(x = Year, y = EnergyProd, colour = Sector) +
+  geom_line() +
+  scale_x_continuous(breaks = 2005:2017) +
+  ylab("\nEnergy Production (KWh)") +
+  ggtitle("Out with non-renewables!!!") +
+  theme(
+    text = element_text(size = 14),
+    title = element_text(size = 15),
+    axis.text = element_text(size = 8),
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_line(colour = "grey90", linetype = "dashed"))
+```
+
