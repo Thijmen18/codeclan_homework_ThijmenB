@@ -108,15 +108,17 @@ seabirds %>%
 
 
 ```
-```{r}
-#area with royal albatros sightings!
 
-seabirds %>% 
-  filter(str_detect(species_common, "Royal albatros")) %>% 
-  leaflet() %>% 
-  addProviderTiles(provider = providers$OpenStreetMap) %>% 
-  addMarkers(lng = ~long, lat = ~lat, popup = ~species_scientific)
-  
+
+```{r}
+all_common <- 
+  seabirds %>% 
+  select(species_common) %>%
+  filter(!str_detect(species_common, "sensu lato")) %>% 
+  filter(!str_detect(species_common, "unidentified")) %>% 
+  distinct(species_common)
+ 
+all_common
 
 
 ```
@@ -169,5 +171,15 @@ common_plot <- seabirds %>%
   scale_y_continuous(labels = scales::comma)
 
 common_plot
+```
+
+```{r}
+#area with royal albatros sightings!
+
+seabirds %>% 
+  filter(str_detect(species_common, "Royal albatros")) %>% 
+  leaflet() %>% 
+  addProviderTiles(provider = providers$OpenStreetMap) %>% 
+  addMarkers(lng = ~long, lat = ~lat, popup = ~species_scientific)
 ```
 
