@@ -121,3 +121,53 @@ seabirds %>%
 
 ```
 
+```{r}
+rare_plot <- seabirds %>% 
+  select(species_scientific, species_common, species_abbreviation, count) %>%
+  filter(!str_detect(species_common, "sensu lato")) %>% 
+  filter(str_detect(species_scientific, "[A-Z]{1}[a-z]* [a-z]*$")) %>% 
+  filter(!str_detect(species_common, "unidentified")) %>% 
+  filter(!str_detect(species_scientific, "\\/")) %>% 
+  group_by(species_scientific, species_common, species_abbreviation) %>% 
+  summarise(count_individual_birds = sum(count)) %>% 
+  arrange(count_individual_birds) %>% 
+  # now you only have the rarest birds ever seen.
+  head(7) %>% 
+  ggplot() +
+  aes(x = species_common, y = count_individual_birds) +
+  geom_col(fill = "#e34a33") +
+  coord_flip() +
+  ylab("Total individual birds observed") +
+  xlab("") +
+  ggtitle("Rarest birds observed") +
+  theme_classic() +
+  scale_y_continuous(breaks = 1:5) +
+  expand_limits(y = 5)
+
+rare_plot
+```
+```{r}
+common_plot <- seabirds %>% 
+  select(species_scientific, species_common, species_abbreviation, count) %>%
+  filter(!str_detect(species_common, "sensu lato")) %>% 
+  filter(str_detect(species_scientific, "[A-Z]{1}[a-z]* [a-z]*$")) %>% 
+  filter(!str_detect(species_common, "unidentified")) %>% 
+  filter(!str_detect(species_scientific, "\\/")) %>% 
+  group_by(species_scientific, species_common, species_abbreviation) %>% 
+  summarise(count_individual_birds = sum(count)) %>% 
+  arrange(desc(count_individual_birds)) %>% 
+  # now you only have the most common birds
+  head(7) %>% 
+  ggplot() +
+  aes(x = species_common, y = count_individual_birds) +
+  geom_col(fill = "#addd8e") +
+  coord_flip() +
+  ylab("Total individual birds observed") +
+  xlab("") +
+  ggtitle("Most common birds seen") +
+  theme_classic() +
+  scale_y_continuous(labels = scales::comma)
+
+common_plot
+```
+
