@@ -1,0 +1,203 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework Week 6 - day 1
+
+## 1.1 The titanic
+Calculate the conditional probabilities prob(survived∣crew) and prob(survived∣passenger)
+ to settle this dispute.
+ 
+```{r}
+library(tidyverse)
+library(gtools)
+source("prob.R")
+
+tit <- read_csv("data/titanic.csv")
+```
+```{r}
+head(tit)
+
+# lets change the data so its easier to calculate
+tit %>% 
+  distinct(class)
+
+crew_tit <- tit %>% 
+  select(class, survived) %>% 
+  mutate(crew = class %in% c("engineering crew", "victualling crew", "restaurant staff", "deck crew")) 
+```
+ We need to calculate:
+ prob(survived ∣ crew) = prob(survived and crew) / prob(crew)
+ 
+```{r}
+#dplyr method:
+
+#----prob(survived ∣ crew)------
+#prob(survived and crew)
+crew_tit %>% 
+  filter(survived == "yes", crew == TRUE) %>% 
+  summarise(p = n()/nrow(crew_tit))
+# = 0.09560489	
+
+#prob(crew)
+crew_tit %>% 
+  filter(crew == TRUE) %>% 
+  summarise(p = n()/nrow(crew_tit))
+# = 0.4032623	
+  
+prob_survived_crew <- 0.09560489 / 0.4032623
+prob_survived_crew # prob(survived ∣ crew) = 0.237
+
+#----prob(survived∣passenger)------
+#prob(survived and passenger)
+crew_tit %>% 
+  filter(survived == "yes", crew == FALSE) %>% 
+  summarise(p = n()/nrow(crew_tit))
+# = 0.2265519	
+
+#prob(passenger)
+crew_tit %>% 
+  filter(crew == FALSE) %>% 
+  summarise(p = n()/nrow(crew_tit))
+# = 0.5967377
+
+prob_survived_passenger <- 0.2265519 / 0.5967377
+prob_survived_passenger #prob(survived∣passenger) = 0.379
+
+```
+Answer:
+prob(survived∣passenger) = 0.379
+prob(survived ∣ crew) = 0.237
+
+passengers were more likely to survive!
+
+```{r}
+# you could also have used the contingency table:
+library(janitor)
+
+crew_tit %>% 
+  tabyl(survived, crew) %>% 
+  adorn_totals(where = c("row", "col")) %>% 
+  adorn_percentages(denominator = "all")
+```
+
+## 1.2 Probability Consolidation Questions
+ 
+### Question 1
+If I roll a six-sided dice once, what is the probability of getting a number less than 5?
+```{r}
+
+#4 possibilities of throwing less than 5
+(1/6)^4 #0.0007716049
+
+```
+ 
+### Question 2
+How many outcomes are there in the sample space of an experiment in which we toss three dice?
+```{r}
+rolldie(3, 6) %>% 
+  nrow()
+
+# 216 different outcomes
+# or 6*6*6
+```
+
+### Question 3
+In an experiment where we roll four dice:
+
+how many outcomes are in the event where the total of the four dice equals 5, 6 or 7
+)?
+what is the probability of this event?
+what assumptions do we apply in answering part ii?
+
+```{r}
+rolldie(4, 6) %>% 
+  mutate(total = X1+X2+X3) %>% 
+  filter(total == 5 | total == 6 | total == 7) %>% 
+  nrow()
+# total 186 outcomes where total is 5, 6 or 7 
+
+# probability of this event is:
+rolldie(4, 6) %>% 
+  summarise(p = 186/n())
+# 0.1435185
+
+# We assume that we use 4 independent dice
+```
+
+### Question 4
+Five chairs are placed in a row in a room, along with five people of differing height. 
+The people sit down randomly on the chairs. What is the probability that they 
+sit in order of decreasing height, left to right?
+
+```{r}
+# In total there are 120 different possibilities
+permutations(5, r = 5, repeats.allowed = FALSE) %>% 
+  nrow()
+# or: 5! (5*4*3*2*1)
+
+# each time only a single person is the largest, and this person has to sit on one particular chair
+
+# this is a permutation
+# p = N! / (N - r)!
+
+# So here:
+# 5*4*3*2*1/ (5*4*3*2*1 - 5*4*3*2*1) = 5*4*3*2*1/5*4*3*2*1 = 1
+
+5*4*3*2*1
+# answer:
+1/120
+#0.008333333
+```
+
+### Question 5
+I roll six dice:
+
+what is the probability I see the numbers 6, 5, 4, 3, 2 and 1 in order on the 
+dice, left to right? what is the probability I see one each of the numbers 
+6, 5, 4, 3, 2 and 1 on the dice regardless of order?
+
+```{r}
+rolldie(6, 6) %>% 
+  nrow() # 46656 options in total
+
+# permutations ()
+permutations(6, r = 6, repeats.allowed = FALSE) %>% 
+  nrow()
+# 720
+# 720/46656 = 0.0154321
+
+
+# combinations ()
+combinations(6, 6, repeats.allowed = FALSE) %>% 
+  nrow()
+# 1
+# (1/6)^6 # or 1/46656 #= p = 2.143347e-05
+
+#?? there is something not right:
+
+# all dice on order (only one occurance) = a permutation
+# p = N! / (N - r)!
+# (6*5*4*3*2*1) / ((6*5*4*3*2*1)-((6*5*4*3*2*1))
+((6*5*4*3*2*1) / ((6*5*4*3*2*1)-((6*5*4*3*2*1))) = 1
+  # or:
+  (1/6)^6 # or 1/46656 #= p = 2.143347e-05
+
+# all dice on order (no particular occurance) = 
+#total_n_combinations = N! / ((N - r)! * r!) = 
+
+  
+```
+
+### Question 6
+If I draw a single card from a 52-card deck, and it is black, what is the probability that its suit is spades? 
+```{r}
+# spades is black
+# there are 26 cards black in the game
+# of 26, 13 are spades
+
+13/26 # -> 1/2 chance its spades
+
+```
+
