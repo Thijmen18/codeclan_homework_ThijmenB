@@ -1,0 +1,151 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Question 1 - Load the data, clean_names() and explore it.
+
+```{r}
+library(tidyverse)
+library(skimr)
+
+phones <- read_csv("data/20190928-items.csv") %>% 
+  janitor::clean_names()
+
+head(phones)
+skim(phones)
+
+phones %>% 
+  ggplot() +
+  aes(x = rating) +
+  geom_histogram(col = "white")
+```
+We have data on mobile phone models, including a rating score, total number of reviews given
+and price.
+
+Based on the skim() function, total reviews seems to be strongly right skewed. 
+Based on skim() and the plot, the review data follows a more normal distribution but 
+seems moderately skewed to the left. 
+
+#  Question 2 - Find the brand with the highest numbers of phones in the dataset
+```{r}
+phones %>% 
+  select(brand) %>% 
+  group_by(brand) %>% 
+  summarise(total_phones = n()) %>% 
+  arrange(desc(total_phones))
+
+# samsung has the most phones in the dataset with 397
+```
+
+# Question 3 - 
+For your top brand, plot the distribution of phone ratings as a probability density, 
+overlaying a fitted normal distribution. Do you think the normal distribution provides 
+a good model of these ratings?
+
+```{r}
+# first just a histogram
+phones %>% 
+  filter(brand == "Samsung") %>% 
+  ggplot() +
+  aes(x = rating) +
+  geom_histogram()
+
+# lets plot the distribution of ratings as a probability density, overlaying a fitted normal distribution
+
+#calculate sd, and mean:
+phone_stats <- phones %>% 
+  filter(brand == "Samsung") %>% 
+  summarise(
+    num = n(),
+    mean = mean(rating),
+    sd = sd(rating)
+  )
+
+phones %>% 
+  filter(brand == "Samsung") %>% 
+  ggplot(aes(x = rating)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 col = "white") +
+  stat_function(
+    fun = dnorm,
+    args = list(
+      mean = phone_stats$mean,
+      sd = phone_stats$sd
+    ),
+    col = "red"
+  )
+```
+I believe that the normal distribution does provide an ok model for the ratings. Because:
+- We see that the data is unimodal spread
+- Its highest peak, does overlap with the peak of the normal distribution curve, eventhough 
+  two bins particularly have a higher density than the rest. But this equals out with near bins being lower.
+- Data shows some left skewed spread, due to an outlier, but this is somewhat compensated by 
+  a higher peak on the left hand side of the curve.
+  
+# Question 4 
+We can be more quantitative in comparing the distribution of top brand ratings 
+with a normal distribution. You calculated the mean() and sd() of your distribution in 
+an earlier question. Use these values to calculate the proportions of ratings 
+within one-, two- and three standard deviations of the mean. Compare these proportions 
+with those you expect for a normal distribution.
+
+```{r}
+# Mean of Samsung rating:
+phone_stats$mean # 3.5733
+# sd of Samsung rating:
+phone_stats$sd #0.6847859
+
+# total samsung ratings:
+phones %>% 
+  filter(brand == "Samsung") %>% 
+  nrow() # 397
+
+# get all ratings 1SD of the mean:
+  phones %>% 
+  filter(brand == "Samsung") %>% 
+  filter(rating >= 3.5733 - 0.6847859) %>% 
+  filter(rating <= 3.5733 + 0.6847859) %>% 
+  summarise(proportion_in_1sd = n() / 397)
+  # 0.7934509	
+  
+# get all ratings 2SD of the mean:
+  phones %>% 
+  filter(brand == "Samsung") %>% 
+  filter(rating >= 3.5733 - (2*0.6847859)) %>% 
+  filter(rating <= 3.5733 + (2*0.6847859)) %>% 
+  summarise(proportion_in_1sd = n() / 397)
+  # 0.9193955	
+  
+# get all ratings 3sd of the mean:
+  phones %>% 
+  filter(brand == "Samsung") %>% 
+  filter(rating >= 3.5733 - (3*0.6847859)) %>% 
+  filter(rating <= 3.5733 + (3*0.6847859)) %>% 
+  summarise(proportion_in_1sd = n() / 397)
+  #0.9798489	
+  
+# Expected proportions of a normal distribution are:
+  #1sd:
+  pnorm(1) - pnorm(-1) #0.6826895
+  # 2 sd:
+  pnorm(2) - pnorm(-2) #0.9544997
+  # 3 sd:
+  pnorm(3) - pnorm(-3) #0.9973002
+  
+# The samsung ratings do not strictly follow a normal distribution if we look at the 
+  # proportions of ratings within 1-2 and 3 SDs of the mean. 
+  # The proportion of values of our data are slightly off, with 80% of the data within the first SD of the mean
+  # while this is 68% in actual normally distributed data. (similar for 2SD and 3 SD). 
+  
+  # In conclusion:
+  # A large proportion of our data lay outside the actual range of data with a normal distribution!
+```
+
+# Extension
+```{r}
+ phones %>% 
+  filter(brand == "Samsung") %>% 
+  qqplot()
+```
+

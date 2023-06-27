@@ -91,6 +91,9 @@ If I roll a six-sided dice once, what is the probability of getting a number les
 #4 possibilities of throwing less than 5
 (1/6)^4 #0.0007716049
 
+#Based on answers, stupid mistake:
+4/6 # -> 0.6667
+
 ```
  
 ### Question 2
@@ -101,6 +104,8 @@ rolldie(3, 6) %>%
 
 # 216 different outcomes
 # or 6*6*6
+
+
 ```
 
 ### Question 3
@@ -125,6 +130,23 @@ rolldie(4, 6) %>%
 
 # We assume that we use 4 independent dice
 ```
+
+Based on answers, was wrong here (forgot to add X4:
+```{r}
+rolldie(4, 6) %>% 
+  mutate(total = X1+X2+X3+X4) %>% 
+  filter(total == 5 | total == 6 | total == 7) %>% 
+  nrow()
+# 34 possibilities
+
+# probability of this event is:
+rolldie(4, 6) %>% 
+  summarise(p = 34/n())
+# 0.0262
+
+# We assume that we use 4 independent dice
+```
+
 
 ### Question 4
 Five chairs are placed in a row in a room, along with five people of differing height. 
