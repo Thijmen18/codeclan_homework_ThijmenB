@@ -144,8 +144,31 @@ phones %>%
 
 # Extension
 ```{r}
- phones %>% 
-  filter(brand == "Samsung") %>% 
-  qqplot()
+samsung_ratings <- phones %>%
+  filter(brand == "Samsung") %>%
+  select(rating)
+
+#qqnorm
+qqnorm(samsung_ratings$rating)
+qqline(samsung_ratings$rating)
+#And we see that the end bits of the bell curve do not follow the line, and therefore deviate 
+#from a normal distribution
+
+library(car)
+
+qqPlot(samsung_ratings$rating)
+
+#Here we see significant deviations from straight line in the tails, so the data 
+# is not very well approximated as normal.
+
+---
+#plotting your own created normally distributed data/line:
+
+#with normally distributed for the line:::
+qqnorm(samsung_ratings$rating)
+#here we create the line of 1000 created datapoints using the mean and sd of the samsung phones
+qqline(rnorm(n = 1000, mean = mean(samsung_ratings$rating), sd = sd(samsung_ratings$rating)))
+
+
 ```
 

@@ -1,0 +1,96 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework Week 6_day 03
+
+##Q1
+Load the data again, clean_names(), and re-familiarise yourself with it
+```{r}
+library(tidyverse)
+library(infer)
+library(janitor)
+
+ames <- read_csv("data/ames.csv") %>% 
+  clean_names()
+```
+```{r}
+head(ames)
+glimpse(ames)
+```
+##Q2
+Investigate the distribution of lot_area. Is the distribution roughly normal? If not, what problems do you find?
+```{r}
+ames %>% 
+  ggplot() +
+  aes(x = lot_area) +
+  geom_histogram(colour = "white")
+
+#The distribution of lot_area is very narrow, with only 6 bins filled with data
+# large majority of the datapoints within a single bin. 
+# Very hard to judge if we can call this data normally distributed!
+```
+
+##Q3
+Compute and visualise a bootstrap sampling distribution for the mean(lot_area) of the sold houses
+
+```{r}
+bootstrap_sampling <- ames %>% 
+  specify(response = lot_area) %>%  # specify the variable of interest
+  generate(reps = 5000, type = "bootstrap") %>% # generate the replicate resamples
+  calculate(stat = "mean") # calculate the statistic of interest for each resample
+  
+bootstrap_sampling
+
+# visualise
+bootstrap_sampling %>% 
+  visualise(bins = 30) 
+
+```
+
+##Q4
+Use your bootstrap distribution to calculate a 95%
+ CI for mean(lot_area), and visualise it on the distribution
+ 
+```{r}
+infer_ci_95 <- bootstrap_sampling %>% 
+  get_ci(level = 0.95, type = "percentile")
+
+# add to visualisation
+bootstrap_sampling %>% 
+  visualise(bins = 30) +
+  shade_confidence_interval(endpoints = infer_ci_95)
+
+infer_ci_95
+```
+ 
+## Q5
+You would like to know the mean(lot_area) of the sold houses with higher confidence. Calculate the 99%
+ CI for this variable (you can re-use your bootstrap distribution from above). Is it narrower or broader than the 95%
+CI? Does that make sense?
+
+```{r}
+infer_ci_99 <- bootstrap_sampling %>% 
+  get_ci(level = 0.99, type = "percentile")
+
+infer_ci_95
+infer_ci_99
+```
+infer_ci_95 -> [9877, 10450]
+infer_ci_99 -> [9814, 10535]
+The 99% CI is broader than the 95% CI, this does make sense!
+
+With 99%, you increase the area you want your sample points to fall in. 
+This is wider with 99% of your data, compared to 95% of your data (this is a narrower window)
+
+##Q6
+Calculate the point estimate of the mean(lot_area)
+
+```{r}
+p_estimate_mean_lot_area <- bootstrap_sampling %>% 
+  summarise(mean = mean(stat))
+
+p_estimate_mean_lot_area
+```
+-> point estimate of the mean(lot_area) -> 10149.66
