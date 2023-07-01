@@ -215,3 +215,29 @@ __H1__ = The width of the produces car part is unequal to the standard 145mm
   
 *-> method to generate null distribution:*
   = bootstrap
+
+## 1.3 Interpreting the results
+
+### Question 1
+Coffee shop problem. Significance level: 0.05, calculated p-value: 0.07
+
+Conclusion:
+p-value > 0.05
+We fail to reject H0, we have failed to prove that the proportion of people 
+heard of the coffee shop is unequal to 40%.
+
+### Question 2
+Website company problem. Significance level: 0.01, p-value: 0.006
+
+Conclusion:
+p-value < 0.01
+We can therefore reject H0, the proportion of people in group A clicking on the banner is 
+significantly smaller than the proportion of people in group B clicking on the banner.
+
+### Question 3
+Manufacturing company problem. Significance level: 0.05, p-value: 0.55
+          
+Conclusion:
+p-value > 0.05
+We therefore fail to reject H0, the average width of the produced car part is 
+statistically significantly equal to the standard 145mm.
