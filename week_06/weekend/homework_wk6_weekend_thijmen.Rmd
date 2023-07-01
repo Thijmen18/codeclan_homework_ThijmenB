@@ -1,0 +1,168 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Weekend Homework - Week 06 - Statistics
+
+## Background
+You work for an animal conservation organisation and are looking to do some 
+investigating into some of the animals to provide evidence for some projects you 
+are looking to run.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(skimr)
+library(infer)
+
+data(msleep)
+```
+
+### Question 1
+Explore the dataset and familiarise yourself with it.
+
+```{r}
+head(msleep)
+skim(msleep)
+glimpse(msleep)
+```
+
+### Question 2 - 
+Jabberwockies sleep for around 7 hours a night, on average. Perform an appropriate 
+statistical test to determine whether the mean sleep_total in the sampled population 
+of animal types differs from the typical value for jabberwockies
+
+```{r}
+# 1. Define our test and significance level
+# H0: Mean(sleep_total) = 7 (mean_jabberwockies)
+# H1: Mean(sleep_total) ≠ 7
+
+# we use standard α = 0.05
+
+# 2. Calculate test statistic
+observed_stat <- msleep %>% 
+  summarise(mean_sleep = mean(sleep_total)) %>% 
+  pull()
+observed_stat #10.43
+
+# 3. we create the null distribution by bootstrapping
+null_distribution <- msleep %>% 
+  specify(response = sleep_total) %>% 
+  hypothesize(null = "point", mu = 7) %>% 
+  generate(reps = 5000, type = "bootstrap") %>% 
+  calculate(stat = "mean")
+
+# 4. visualise and plot the observed statistic on the null distribution
+null_distribution %>% 
+  visualise(bins = 25) +
+  shade_p_value(obs_stat = observed_stat, direction = "both") #both, because we just want to test for significant difference
+```
+
+```{r}
+# 5. calculate the p-value
+p_value <- null_distribution %>% 
+  get_p_value(obs_stat = observed_stat, direction = "both")
+p_value
+```
+p_value = 0.001 (is shown as 0, but cannot be 0).
+
+__Conclusion:__
+We reject H0, as P-value < α = 0.001 < 0.05
+The average total sleep of all animals is significantly different from the average 
+sleep of jabberwockies
+
+### Question 3 - 
+Perform an appropriate statistical test to determine whether omnivores sleep for 
+significantly longer than herbivores, on average.
+
+```{r}
+# 1. create the dataset
+vore_sleep <- msleep %>% 
+  select(vore, sleep_total) %>% 
+  filter(str_detect(vore, "omni|herbi"))
+
+# 2. Define our test and significance level
+# H0: Mean(sleep_omnivore) = Mean(sleep_herbivore)
+# H1: Mean(sleep_omnivore) > Mean(sleep_herbivore) -> Mean(sleep_omnivore) - Mean(sleep_herbivore) > 0
+
+# we use standard α = 0.05
+
+# 3. create null distribution
+null_distribution_vore <- vore_sleep %>% 
+  specify(response = sleep_total, explanatory = vore) %>% #the relationship between length and species we test
+  hypothesize(null = "independence") %>% # null hypothesis = no relationship
+  generate(reps = 5000, type = "permute") %>% 
+  calculate(stat = "diff in means", order = c("omni", "herbi")) #sample stat is mean(omni)-mean(herbi)
+
+# 4. calculate observed statistic
+observed_stat_vore <- vore_sleep %>% 
+  specify(response = sleep_total, explanatory = vore) %>% 
+  calculate(stat = "diff in means", order = c("omni", "herbi"))
+
+observed_stat_vore
+
+# 5. p-value
+p_value_vore <- null_distribution_vore %>% 
+  get_p_value(obs_stat = observed_stat_vore, direction = "right")
+
+```
+6. conclusion
+
+p-value > α, 0.131 > 0.05
+We cannot reject H0, there is no significant difference in total sleep between 
+herbivores and omnivores
+
+### Question 4 - 
+Perform an appropriate statistical test to determine whether the proportion of 
+domesticated animal types in the population of animal types is greater than 5%. 
+
+-> we need to do a one-sample proportion hypothesis test
+
+```{r}
+# 1. Define our test and significance level
+# H0: Proportion(domesticated_animal_types) = 0.05
+# H1: Proportion(domesticated_animal_types) > 0.05
+
+# we use standard α = 0.05
+head(msleep)
+
+# 2. edit/create the dataset (lots of NA's for non-domesticated animals)
+domestic_msleep <- msleep %>% 
+  mutate(is_domestic = if_else(conservation == "domesticated", TRUE, FALSE, 
+                               missing = FALSE), .before = "genus")
+
+# 2. create null distribution
+null_distribution_prop <- domestic_msleep %>% 
+  specify(response = is_domestic, success = "TRUE") %>% 
+  hypothesize(null = "point", p = 0.05) %>% 
+  generate(reps = 5000, type = "draw") %>% 
+  calculate(stat = "prop")
+
+head(null_distribution_prop)
+
+# 3. calculate observed stat
+observed_stat_prop <- domestic_msleep %>% 
+  group_by(is_domestic) %>% 
+  summarise(prop = n()/nrow(domestic_msleep)) %>% 
+  filter(is_domestic == "TRUE") %>% 
+  pull() # 0.12
+
+# 4. let's visualise
+null_distribution_prop %>% 
+  visualise(bins = 25) +
+  shade_p_value(obs_stat = observed_stat_prop, direction = "right")
+
+# 5. let's calculate the p-value
+p_value <- null_distribution_prop %>% 
+  get_p_value(obs_stat = observed_stat_prop, direction = "right")
+
+p_value # 0.01
+```
+Conclusion:
+pvalue < α
+0.01 < 0.05
+We therefore reject H0 
+The proportion of domestic animals is significantly higher than 5%
+
+

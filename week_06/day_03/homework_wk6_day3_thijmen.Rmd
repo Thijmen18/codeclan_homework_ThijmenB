@@ -30,6 +30,12 @@ ames %>%
 #The distribution of lot_area is very narrow, with only 6 bins filled with data
 # large majority of the datapoints within a single bin. 
 # Very hard to judge if we can call this data normally distributed!
+
+ames %>%
+  ggplot(aes(x = lot_area)) +
+  geom_boxplot()
+
+#based on the boxplot you see that the data is strongly right skewed.
 ```
 
 ##Q3
@@ -84,8 +90,13 @@ The 99% CI is broader than the 95% CI, this does make sense!
 With 99%, you increase the area you want your sample points to fall in. 
 This is wider with 99% of your data, compared to 95% of your data (this is a narrower window)
 
+"It is broader than the 95%
+ CI. We haven’t increased sample size, so the only way to increase confidence is 
+ by increasing the width of the interval. Again, by analogy: to be more confident 
+ of catching the fish, you need to use a bigger net."
+
 ##Q6
-Calculate the point estimate of the mean(lot_area)
+Calculate the _point estimate_ of the mean(lot_area)
 
 ```{r}
 p_estimate_mean_lot_area <- bootstrap_sampling %>% 
@@ -94,3 +105,13 @@ p_estimate_mean_lot_area <- bootstrap_sampling %>%
 p_estimate_mean_lot_area
 ```
 -> point estimate of the mean(lot_area) -> 10149.66
+
+
+##Q1 extension
+```{r}
+
+```
+
+# What is CI
+-> Statistic is a calculated stat
+-> parameter is a 
