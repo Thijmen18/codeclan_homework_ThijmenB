@@ -19,6 +19,7 @@ library(infer)
 data(msleep)
 ```
 
+## 1.1 Hypothesis testing
 ### Question 1
 Explore the dataset and familiarise yourself with it.
 
@@ -165,4 +166,52 @@ pvalue < α
 We therefore reject H0 
 The proportion of domestic animals is significantly higher than 5%
 
+## 1.2 Defining the hypothesis
 
+### Question 1 - 
+*-> Test to use:*
+One-sample independent hypothesis test for proportion
+
+*-> Defining H0 and H1:*
+__H0__ = The proportion of people heard of shop is equal to 40%
+  = π(heard_of_shop) = 0.4
+  
+__H1__ = The proportion of people heard of shop is more than 40%
+  = π(heard_of_shop) > 0.4
+  
+*-> method to generate null distribution:*
+  = draw
+
+### Question 2 - 
+*-> Test to use:*
+two-sample paired hypothesis test for proportions
+
+  (paired because the users, are using the website before and than will either see 
+  a edited or un-edited version). Proportions, because you want to compare the 
+  proportion of clicks on the banner for each group.)
+
+*-> Defining H0 and H1:*
+__H0__ = The proportion of people in group A clicking on the banner is 
+          equal to the proportion of people in group B clicking on the banner
+  = π(group_A_clicking_on_banner) = π(group_B_clicking_on_banner)
+  
+__H1__ = The proportion of people in group A clicking on the banner is 
+          smaller than the proportion of people in group B clicking on the banner
+  = π(group_A_clicking_on_banner) < π(group_B_clicking_on_banner)
+  
+*-> method to generate null distribution:*
+  = permutation
+  
+### Question 3 - 
+*-> Test to use:*
+one-sample mean hypothesis test
+
+*-> Defining H0 and H1:*
+__H0__ = The width of the produces car part is equal to the standard 145mm
+  = µ(part_width) = 145
+  
+__H1__ = The width of the produces car part is unequal to the standard 145mm
+  = µ(part_width) ≠ 145
+  
+*-> method to generate null distribution:*
+  = bootstrap
