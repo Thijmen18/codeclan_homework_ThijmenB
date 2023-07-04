@@ -175,6 +175,29 @@ total_rental_weekday_plot
     day is a day in the weekend! A great focus could be to advertise sightseeing trips
     per bikes on sundays.
     
+    
+```{r}
+#moments on the day, people take bikes
+
+nyc_bikes_dates %>% 
+  mutate(hour = hour(start_time)) %>% 
+  ggplot() +
+  aes(x = hour) +
+  geom_bar() +
+  facet_wrap(~weekday)
+
+```
+total_rental_weekday_perhour_plot
+-> This bar plot shows the total number of bike hires per weekday split per start 
+    time (in hours). We can see that 
+    bike hires are most popular during rush hour on weekdays. While Saturday and 
+    Sunday show a more equal popularity of bikes.
+-> For the bike rental company it is important to know which hours of the day bikes 
+    are most popular to rent. For the operational team it is importance to haev as much 
+    bikes available as possible during rush hours. But for the advertisement team
+    it is important to realise that it might be smart to focus on tourists during the day
+    to increase hires.
+
 ---------------------------------------
 Step 2
 # -> visualisations of bike rentals per demographic:
@@ -376,3 +399,113 @@ nyc_bikes_dates_age %>%
   geom_point()
 ```
 
+==================
+Additional business questions
+
+Spatial data analyses
+
+Q: What is the geographical spread of the start points of bike hires?
+```{r}
+library(sf)
+library(tidyverse)
+library(leaflet)
+```
+
+```{r}
+# Lets create a map with the geographical spread of start points of bike hires:
+
+leaflet(nyc_bikes) %>% 
+  addTiles() %>% 
+  addCircleMarkers(
+    lng = ~ start_long,
+    lat = ~ start_lat,
+    clusterOptions = markerClusterOptions()
+  )
+
+```
+Based on this geographical plot we see the number of bike rental starting points
+as plotted on the map of NYC.
+We clearly see that the most bike hires started in Jersey City, with the highest number of 
+bike hires on Christopher Columbus Drive station.
+
+-> This is important for the planning/operational team to know because they can 
+increase the focus of their work in Jersey City area to make sure there are enough
+bike hires at peak times of the day.
+-> In areas around Jersey city, we see that bike hires are much lower. This is important
+for the advertisement team to know, as they can increase visibility of the service
+provided in these ares in order to attract more customers.
+
+-----
+!!!
+-> Lets create a map of all end stations for hired bikes
+
+```{r}
+# Lets create a map with the geographical spread of end points of bike hires:
+
+leaflet(nyc_bikes) %>% 
+  addTiles() %>% 
+  addCircleMarkers(
+    lng = ~ end_long,
+    lat = ~ end_lat,
+    clusterOptions = markerClusterOptions()
+  )
+
+```
+
+Again we see that the most popular station is Jersey City, and eventhough most bikes
+are returned within the greater Jersey City area we also see some individual bikes 
+being returned at a greater distance including Greenvile and Manhatten island. 
+
+-> This is important for the company as it demonstrates that there is an interest in 
+returning bikes at a further distance from the start point. For the advertisement 
+team this is interesting as it may be of interest to focus on customers that want to travel 
+longer distances.\
+
+---
+  !!!
+-> let's map all end stations, of all trips longer than 30 mins
+```{r}
+
+nyc_bikes %>% 
+  mutate(trip_time = stop_time - start_time) %>% 
+  mutate(time_hours = as.numeric(trip_time, "hours")) %>% 
+  filter(time_hours >= 1) %>% 
+  leaflet() %>% 
+  addTiles() %>% 
+  addCircleMarkers(
+    lng = ~ end_long,
+    lat = ~ end_lat,
+    clusterOptions = markerClusterOptions()
+  )
+```
+And indeed, if we only include trips longer than 1 hour, we see that most bikes are 
+still returned in and around Jersey City but also on Manhatten Island
+-> Interesting to explore if there could be a new customer base!
+
+---
+!!!
+Can you predict bike use over the next couple of months? (This is based on the 
+flipped time series forecasting lesson)
+
+```{r}
+library(fable)
+library(urca)
+library(tsibble)
+
+# lets create/clean the data by downsampling and summarising bike hires per month
+# select the variables we need:
+bike_hires_per_month <-  nyc_bikes_dates %>% 
+  index_by(month) %>% 
+  summarise(rentals_per_month = n())
+
+# Use autoplot to check the series:
+bike_hires_per_month %>% 
+  mutate(sum = cumsum(rentals_per_month)) %>% 
+  select(month, sum) %>% 
+  ggplot() +
+  aes(x = month, y = sum) +
+  geom_line()
+
+
+
+```
