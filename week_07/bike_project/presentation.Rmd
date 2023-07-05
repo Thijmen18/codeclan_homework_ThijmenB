@@ -82,7 +82,8 @@ By zooming in we see that the Christopher Columbus Drive station is the most
 popular station to rent a Citi Bike.
 
 #### __Aim of this report__
-This report aims to provide insight into "Citi Bike's" Key Performance Indicators.
+This report aims to provide insight into "Citi Bike's" Key Performance Indicators
+by focussing on peak rental periods and customer base.
 The analysis provides information about peak rental periods: moments in time when 
 bikes are most popular to rent. Further, customer demographics are analysed providing
 information about the type/group of customers interested in bike hires.
@@ -110,7 +111,7 @@ the analyses of the data. <br>
 We have focused on analysing the peak and off-peak periods for popularity of 
 bike hires. <br>
 Increasing bike hires can be achieved by focussing on popularising (e.g. by 
-advertisements of discounts) during these off-peak periods.
+advertisements or discounts) during these off-peak periods.
 <br>
 We have focussed on the following periods in time: <br>
   * Year <br>

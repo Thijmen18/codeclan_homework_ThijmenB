@@ -252,11 +252,14 @@ We see the same difference when looking at the data per season.
 -> Lets get gender as a percentage of the total:
 
 ```{r}
-nyc_bikes_dates %>% 
+gender_calc <- as.tibble(nyc_bikes_dates) #
+
+  gender_calc %>% 
   group_by(gender) %>%
-  summarise()
+  summarise(proportion_gender_types = n()/nrow(gender_calc))
 
-
+class(gender_calc)
+nrow(gender_calc)
 
 nyc_bikes_dates %>% 
   ggplot() +

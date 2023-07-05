@@ -1,0 +1,470 @@
+---
+title: "Report: Citi Bike bike rentals"
+output:
+  html_document:
+    df_print: paged
+    code_folding: hide
+---
+```{r message = FALSE, warning = FALSE}
+# 2. Preparing data for visualisations/analyses
+
+#loading in Libraries
+library(tidyverse)
+library(tsibble)
+library(tsibbledata)
+library(skimr)
+library(lubridate)
+library(ggplot2)
+library(leaflet)
+
+# cleaning/wrangling dataset
+# preparing various datasets used for the plots
+
+# 1. add multiple columns to group per time period:
+nyc_bikes_dates <- nyc_bikes %>% 
+  mutate(year = year(start_time),
+         month = month(start_time, label = TRUE, abbr = TRUE),
+         day = day(start_time),
+         weekday = wday(start_time, label = TRUE, abbr = TRUE))
+
+# 2. add age groups:
+# let's add age to the dataset, and divide per age group
+  # 0-17, 18-25, 26-35, 35-50, 50-65, 66-up
+nyc_bikes_dates_age <- nyc_bikes_dates %>% 
+    mutate(age = 2018 - birth_year) %>% 
+  mutate(age_group = case_when(
+    age < 18 ~ "0-17",
+    age >= 18 & age <= 25 ~ "18-25",
+    age > 25 & age <= 35 ~ "26-35",
+    age > 35 & age <= 50 ~ "36-50",
+    age > 50 & age <= 65 ~ "50-65",
+    age > 65 ~ "66-up"
+  ))
+
+# 3. reformat the tsibble into tibble to get some calculations
+gender_calc <- as.tibble(nyc_bikes_dates) 
+```
+
+
+# 1. Documentation - introduction
+
+### About the company
+
+"Citi Bike" is a bike rental company in New York City launched in 2013.
+Bikes can be rented from docking stations across a network of bike stations
+throughout the city.
+Bikes can be returned at any station of choice. 
+<br>
+
+For regular customers bike hire prices are fixed for 30 minutes, with a fixed amount per minute after.
+People with a subscription get the first 45 minutes per day for free. <br>
+
+
+__Current level of bike rentals__ <br>
+In 2018 we have seen a total of 4268 bikes being rented
+
+```{r}
+nyc_bikes_dates %>% 
+  index_by(year) %>% 
+  summarise(total_rentals = n())
+```
+<br>
+__Area of activity__ <br>
+Citi Bike is currently available and active in the Jersey City area.
+The following map shows the location of users renting bikes in 2018.
+
+```{r}
+leaflet(nyc_bikes) %>% 
+  addTiles() %>% 
+  addCircleMarkers(
+    lng = ~ start_long,
+    lat = ~ start_lat,
+    clusterOptions = markerClusterOptions()
+  )
+```
+
+_Description of visualisation_<br>
+This map shows the geographical spread of starting positions of bike rentals of 
+Citi Bike bikes.
+Based on this plot we see that highest popularity for bike hires is in Jersey City. 
+By zooming in we see that the Christopher Columbus Drive station is the most 
+popular station to rent a Citi Bike.<br>
+_Importance_<br>
+This map is of importance to the business as it shows most popular areas to rent bikes
+which can be used by the operational team to assure sufficient availability of bikes
+at popular stations.<br>
+
+### Aim of this report
+
+This report aims to provide insight into "Citi Bike's" Key Performance Indicators
+by focussing on peak rental periods and customer base.
+The analysis provides information about peak rental periods: moments in time when 
+bikes are most popular to rent. <br>
+Further, customer demographics are analysed providing
+information about the type/group of customers interested in bike hires.
+
+This will provide actionable insights as it gives information about periods in time 
+when bike hires are low and customer groups that are less likely to hire bikes, 
+based on the 2018 dataset. 
+
+In short, this report tries to answer the question:
+
+__To who and when do we need to address our campaigns in order to increase our bike hires?__
+
+The conclusions drawn from this report can be used by the commercial/advertisement 
+team to focus on customers that are currently not regularly using bike rentals.
+Furthermore, Citi Bike's future campaigns should focus on popularizing bike rentals at 
+times we currently see low bike rental popularity.
+
+
+### Ethics
+
+Important to highlight is that data ethics have been taken into consideration during
+the analyses of the data.
+
+  * All data is anonymised and cannot be traced back to individual customers;
+  * We have further looked at underrepresented groups among the customers.
+
+# 3. Data visualisation - analysis
+
+### When are Citi Bike's being hired?
+
+We have focused on analysing the peak and off-peak periods for popularity of 
+bike hires. <br>
+Increasing bike hires can be achieved by focusing on popularising these off-peak
+periods, e.g. by advertisements and/or discount rates. 
+
+We have focussed on the following periods in time: 
+
+  * Year and seasons
+  * Days
+  * Hours
+
+#### Year and seasons 
+
+By plotting the total number of bike hires throughout the year per month, we can 
+identify periods of low popularity.
+
+```{r message = FALSE, warning = FALSE}
+nyc_bikes_dates %>% 
+  index_by(month) %>% 
+  summarise(rental_per_month = n()) %>% 
+  ggplot() +
+  aes(x = month, y = rental_per_month) +
+  geom_col(col = "black", fill = "springgreen4") +
+  ggtitle("Total bike hires per month") +
+  ylab("Total hires\n") +
+  xlab("\n2018") +
+  theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.x = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major.y = element_line(size = 0.3, colour = "black"))
+```
+<br>
+_Description of visualisation_<br>
+This bar plot shows the number of bike hires per month in 2018. We can see that 
+bike hires peak in August with over 700 bike hires, while the lowest number of bikes
+are rented in February with just over 100 bike hires.<br>
+
+_Importance_<br>
+It is important to know which month's are least popular for bike rentals because 
+the commercial/advertisement team should focus on the least popular months to 
+attract more customers. 
+Further, the customer team can focus on the most busy months in terms of improving 
+customer experience in successful months in order not to loose customers due to 
+heavy demands.
+
+The above graph indicates that bike rental popularity is likely linked to weather 
+conditions. This is clearer when we divide the rental data per season:
+
+```{r}
+# lets check per season, with (Dec, Jan, Feb = Winter); (Mar, Apr, May = Spring); (Jun, Jul, Aug = Summer); (Sep, Okt, Nov: Autumn) 
+nyc_bikes_dates %>% 
+  mutate(season = recode(month,
+                        "Jan" = "Winter",
+                        "Feb" = "Winter",
+                        "Mar" = "Spring",
+                        "Apr" = "Spring",
+                        "May" = "Spring",
+                        "Jun" = "Summer",
+                        "Jul" = "Summer",
+                        "Aug" = "Summer",
+                        "Sep" = "Autumn",
+                        "Oct" = "Autumn",
+                        "Nov" = "Autumn",
+                        "Dec" = "Winter")) %>% 
+  index_by(season) %>% 
+  summarise(rental_per_season = n()) %>% 
+  ggplot() +
+  aes(x = season, y = rental_per_season) +
+  geom_col(col = "black", fill = "springgreen4") +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major.y = element_line(size = 0.3, colour = "black")) +
+  ggtitle("Total bike hires per season") +
+  ylab("Total hires\n") +
+  xlab("\n2018")
+```
+<br>
+_Description of visualisation_<br>
+This bar plot shows the number of bike hires per season in 2018. We can see that 
+bike hires peak during the Summer with over 1750 bike hires, while the lowest 
+number of bikes are rented during Winter with less than 500 bike hires.<br>
+
+_Importance_<br>
+This graph is clearly indicating the most popular seasons for bike hires. It might 
+be a good idea for the commercial team to increase visibility of advertisements 
+during seasons of low popularity in order to attract more customers and 
+increase bike rentals.
+<br>
+Based on the per-month plot we suggested that in seasons with nice weather rental 
+numbers peak.
+However, in spring we generally see better weather than in autumn and still rental 
+numbers in Spring are second lowest. This can be a great opportunity for the 
+advertisement team to focus on!<br>
+
+#### Days and hours
+
+When we look at most popular days for bike rentals we clearly see that working days
+are more popular than the weekends.
+
+```{r}
+nyc_bikes_dates %>% 
+  index_by(weekday) %>% 
+  summarise(rental_per_weekday = n()) %>% 
+  ggplot() +
+  aes(x = weekday, y = rental_per_weekday) +
+  geom_col(col = "black", fill = "springgreen4") +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major.y = element_line(size = 0.3, colour = "black")) +
+  ggtitle("Total bike hires per day") +
+  ylab("Total hires\n") +
+  xlab("\n2018")
+```
+<br>
+_Description of visualisation_<br>
+This bar plot shows the total number of bike hires per weekday in 2018. We can 
+see that bike hires are most popular on Tuesdays with over 700 bike hires, while 
+the lowest number of bikes are rented on Sundays with ~450 bike hires.<br>
+
+_Importance_<br>
+For the bike rental company it is important to know which day's are least popular 
+for bike rentals because the commercial/advertisement team could focus on the least 
+popular days to attract more customers. 
+Interestingly, most popular day to rent a bike is on a weekday while the least popular 
+day is a day in the weekend! A great focus could be to advertise weekend 
+activities, like sightseeing trips, per bike.
+<br>
+Bike hires are not equally divided during the week. What are off-peak times during 
+the day?
+
+```{r}
+nyc_bikes_dates %>% 
+  mutate(hour = hour(start_time)) %>% 
+  ggplot() +
+  aes(x = hour) +
+  geom_bar(col = "black", fill = "#F9A472") +
+  facet_wrap(~weekday, ncol =4) +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major.y = element_line(size = 0.3, colour = "black")) +
+  ggtitle("Total bike hires per hour per day") +
+  ylab("Total hires\n") +
+  xlab("Hour of day")
+```
+<br>
+_Description of visualisation_<br>
+This bar plot shows the total number of bike hires per weekday split per start 
+time (in hours). 
+We can see that bike hires are most popular during rush hour on weekdays. While 
+Saturday and Sunday show a more unimodal distribution of bike rental popularity 
+during the day.<br>
+    
+_Importance_<br>
+This barplot provides insights into peak and off-peak hours for bike hires throughout
+the day. For the operational team it is of importance to have as much bikes 
+available as possible during rush hours. For the advertisement team it is important 
+to realise that it might be smart to focus on tourists during the day to increase hires.
+<br>
+
+We have looked at when rental bikes are most popular in order for the advertisement
+team to know which off-peak periods should be advertised in order to attract more
+customers and increase bike hires. 
+Furthermore, the peak periods are informative for the operational team to have 
+plenty of bikes ready to rent out.
+
+### Who is hiring Citi Bike's?
+
+We have analysed the demographics of customers renting bikes at Citi Bike.
+
+We have focussed on the following demographics:
+
+  * Gender
+  * Age groups
+  * Trip types
+
+
+#### Gender
+
+We have first analysed the proportion of gender types renting bikes at Citi Bike:
+
+```{r}
+gender_calc %>% 
+  group_by(gender) %>%
+  summarise(proportion_gender_types = n()/nrow(gender_calc))
+```
+<br>
+This indicates that bike hires are most popular among males than females. In fact,
+bike hires are more than double as popular to rent by males than females.<br>
+<br>
+_Importance_<br>
+Firstly, it is of importance for a company to know what the customer base looks like.
+This can help in finding better tailered solution for client-specific wishes, or 
+help in decisions to expand and increase attractivity of the product for under-represented
+groups.
+Furthermore, the big difference in male/female ratio interested in renting bikes
+should be investigated further by the customer team: 
+The underlying cause could namely be that females feel unsafe renting a bike, this 
+needs to be addressed and investigated further!
+<br>
+
+When we plot our daily bike rental plot and divide per gender we see that males are 
+actually causing the workday/business day difference. While bike usage among females
+are stable across the week:
+
+```{r}
+nyc_bikes_dates %>% 
+  ggplot() +
+  aes(x = weekday) +
+  geom_bar(fill = "#3182bd") +
+  facet_wrap(~ gender) +
+  xlab("\nDays") +
+  ylab("Total hires\n") +
+  ggtitle("Percentage of gender types renting bikes in 2018") +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major.y = element_line(size = 0.3, colour = "black"))
+```
+<br>
+_Description of visualisation_<br>
+This bar plot shows the total number of bike hires per weekday in 2018, divided 
+per gender. We can see that bike hires are most popular among males than females.
+For females there is hardly a difference in bike rentals between days. The pattern 
+visible here (males with clear distinction between workday and weekend) indicates 
+that males potentially use bikes to commute to work. While this is absent in 
+females.<br>
+
+_Importance_<br>
+Based on this plot we can conclude that the difference in bike rental popularity
+between weekdays and the weekend can be explained by males having a larger interest
+in renting bikes during workdays.
+The fact that this difference is absent in females indicates that women do not use 
+bike hires for work commutes. This is a good opportunity for the advertisement/sales 
+department to promote in order to increase overall bike hires.<br>
+
+
+#### Age groups
+
+Besides gender we have looked at the age groups making use of Citi Bike, bike rental:
+
+```{r}
+nyc_bikes_dates_age %>% 
+  ggplot() +
+  aes(x = age_group, y = after_stat(prop), group = 1) +
+  geom_bar(fill = "#de2d26") +
+  xlab("\nAge group") +
+  ylab("Percentage\n") +
+  ggtitle("Percentage of age groups renting bikes in 2018") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major.y = element_line(size = 0.3, colour = "black"))
+```
+<br>
+_Description of visualisation_<br>
+This bar plot shows the proportion of age groups making use of Citi Bike rentals.
+Age groups have been created based on setting age boundaries between different 
+generations. We see that the highest percentage of users are millenials aged 
+between 26-35, followed by 36-50 year old's. Young adults (aged 18-25) and older 
+generations (50 and up) only form less than 20% of the total customer base.<br>
+
+_Importance_<br>
+This information is important for the commercial/advertisement team to know: bike
+rental numbers can be increased if we promote bike rentals among the youth and 
+elderly. This can potentially be reached by an add campaign.<br>
+
+
+#### Trip length as indication for user type
+
+Finally, we have looked at trip length of bike rentals. We have filtered on trips
+less than one hour (taking out single outliers longer than one hour). 
+
+``` {r message = FALSE, warning = FALSE}
+nyc_bikes_dates_age %>%
+  mutate(trip_time = stop_time - start_time) %>% 
+  mutate(time_hours = as.numeric(trip_time, "hours")) %>% 
+  filter(time_hours <= 1) %>% 
+  ggplot() +
+  aes(x = time_hours) +
+  geom_histogram(fill = "springgreen4") +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major.y = element_line(size = 0.3, colour = "black")) +
+  ggtitle("Trip length for bike hires less than one hour") +
+  ylab("Total hires\n") +
+  xlab("\nTime")
+```
+<br>
+_Description of visualisation_<br>
+This barplot shows the distribution of trip length for each bike hire less than 
+one hour. We see that the far majority of trips are less than 30 minutes, with most trips 
+taking around 10 minutes.<br>
+
+_Importance_<br>
+This information is very useful and confirms that having a fixed amount to be payed
+for a longer trip than the average trip length is a commercial attractive model
+as it generates more revenue than when charged for every minute. 
+Further, it is adviced to increase popularity of longer trips (more than 30 minutes)
+as we see that only few people are using bikes for longer trip and with a per-minute 
+rate every additional minute spend on a bike creates more revenue.<br>
+
+## Conclusions / key points
+
+In this report we have focussed on peak rental periods and identified the main
+customers of Citi Bike bike rental.
+
+In order to address the main objective: increasing total bike hires, we have aimed 
+to answer:
+
+__To who and when do we need to address our campaigns in order to increase our bike hires?__
+
+* We identified that months falling in spring, autumn and winter share a lower 
+popularity for bike hires than the summer.
+* Workdays are more popular for bike hires than Saturday and Sundays.
+* For each day of the week we see a peak in activity during the morning and evening
+rush hours, while activity is more stable during the weekend. 
+This indicates that bike hires are used by users for commuting to work.
+
+We have further analysed the customer base of Citi Bike:
+
+* We calculated that the majority of the bike users are male (72%) while a minority
+of the users is female (22%). We want to stress the importance to have this investigated
+further by the customer team.
+* The majority of bike users fall within the millenial generation aged 26-35, 
+followed by people aged 36-50.
+* The majority of bike users use bike rentals for trips shorter than 30 minutes, 
+with a peak for trips of around 10 minutes.
+
+We advice to increase visibility of Citi Bike to those customer groups that are 
+currently underrepresented among rental bike users. Further, we advice to promote
+the use of bike rentals at off-peak periods as identified.
+
+
+
