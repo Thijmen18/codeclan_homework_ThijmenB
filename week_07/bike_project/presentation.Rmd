@@ -13,6 +13,7 @@ library(tsibbledata)
 library(skimr)
 library(lubridate)
 library(ggplot2)
+library(leaflet)
 ```
 
 ```{r}
@@ -64,7 +65,8 @@ nyc_bikes_dates %>%
   summarise(total_rentals = n())
 ```
 __Area of activity__
-EXPLAIN!
+Citi Bike is currently available and active in the Jersey City area.
+The following map shows the location of users renting bikes in 2018.
 ```{r}
 leaflet(nyc_bikes) %>% 
   addTiles() %>% 
@@ -75,9 +77,9 @@ leaflet(nyc_bikes) %>%
   )
 ```
 
-EXPLAIN!
-
-
+Based on this plot we see that highest popularity for bike hires is in Jersey City. 
+By zooming in we see that the Christopher Columbus Drive station is the most 
+popular station to rent a Citi Bike.
 
 #### __Aim of this report__
 This report aims to provide insight into "Citi Bike's" Key Performance Indicators.
@@ -336,10 +338,10 @@ nyc_bikes_dates %>%
     The pattern visible here (males with clear distinction between workday and weekend)
   indicates that males potentially use bikes to commute to work. While this is 
   absent in females. 
-* This is a good opportunity for the advertisement department to promote.
+* This is a good opportunity for the advertisement/sales department to promote.
 
 #### 2. Age groups
-EXPLAIN!!!
+Besides gender we have looked at the age groups making use of Citi bike, bike rental:
 ```{r}
 nyc_bikes_dates_age %>% 
   ggplot() +
@@ -355,10 +357,25 @@ nyc_bikes_dates_age %>%
         panel.grid.major.y = element_line(size = 0.3, colour = "black"))
 ```
 
-EXPLAIN!!!
+* This bar plot shows the proportion of age groups making use of Citi Bike rentals.
+  Age groups have been created based on setting age boundaries between -roughly- 
+  different generations.
+  We see that the highest percentage of users are millenials aged between 26-35, 
+  followed by 36-50 year old's. Young adults (aged 18-25) and older generations (50 and up)
+  only form less than 20% of the total customer base.
+* This information is important for the commercial/advertisement team to know: bike
+  rental numbers can be increased if we promote bike rentals among the youth and 
+  elderly. This can potentially be reached by an add campaign.
 
 #### 3. User
-Explain!
+Among the Citi Bike customer base there are two types of customers:
+
+* 1. Subscribers. Customers with a subscription pay a monthly fee and get the first 
+45 minutes of every trip free. After 45 minutes a fixed rate per minute is charged.
+    
+* 2. Regular customers. Regular customers pay a fixed amount for every first 30 minutes 
+of each trip. After 30 minutes a fixed rate per minute is charged.
+  
 ```{r}
 nyc_bikes_dates_age %>% 
   ggplot() +
@@ -374,11 +391,20 @@ nyc_bikes_dates_age %>%
         panel.grid.major.y = element_line(size = 0.3, colour = "black"))
 
 ```
-EXPLAIN!
+
+This bar plot shows the number of bike hires done by regular customers and those
+with a subscription for each day of the week. 
+The majority of the customer base are customers with a subscription. This is positive
+for the company as they bring in a stable revenue.
+Only a small proportion of bike renters are regular customers. Based on the activity
+per day we see that subscribing customers are more regularly rent bikes during 
+workdays indicating that subscribers use Citi Bike's to commute to work.
+
 
 #### 4. Trip length
+Finally, we have looked at trip length of bike rentals. We have filtered on trips
+less than one hour (taking out extreme outliers of multiple hours). 
 
-EXPLAIN!
 ```{r}
 nyc_bikes_dates_age %>%
   mutate(trip_time = stop_time - start_time) %>% 
@@ -396,9 +422,16 @@ nyc_bikes_dates_age %>%
   xlab("\nTime")
 
 ```
-
-EXPLAIN!
-
+* Based on this barplot we see the number of bike hires divided per trip length.
+  We see that the far majority of trips are less than 30 minutes, with most trips 
+  taking around 10 minutes.
+* This information is very useful and confirms that having a fixed amount to be payed
+  for a longer trip than the average trip length is a commercial attractive model
+  as it generates more revenue than when charged for every minute. 
+  Further, it is adviced to increase popularity of longer trips (more than 30 minutes)
+  as we see that only few people are using bikes for longer trip and with a per-minute 
+  rate every additional minute spend on a bike creates more revenue.
+  
 ## Conclusions / key points
 
 
