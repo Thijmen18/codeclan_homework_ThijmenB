@@ -5,6 +5,18 @@ output: html_notebook
 
 # Homework week 9 - PDA data transformation task
 
+## PDA outcomes covered
+
+1.8 Data management including security
+3.1 Tools for data transformation including tools for automating data transformation
+3.2 Types of data transformation
+3.3 Transformations including joins
+3.4 String manipulation including extracting a substring, replacing part of a string, joining strings and splitting strings
+3.5 Data cleaning
+3.6 Data modelling including star schema
+3.7 Data loading
+3.8 Legal and ethical considerations for data storage
+
 ### Question 1
 
 ```{r}
@@ -93,20 +105,9 @@ customers_all <- dir_ls("raw_data/", regexp = "customers.csv$") %>%
 # Q5 - Impute missing values in numeric columns with the median value of customers 
 # with the same gender and country. 
 
-customers %>% 
-  group_by(customer_gender, customer_country) %>% 
-  mutate(across(
-    where(is.numeric)) =
-      coalesce(
-        across(where(is.numeric),
-               ~ mean(.x, na.rm = TRUE))))
-
 customers <- customers_all %>% 
   group_by(customer_gender, customer_country) %>% 
-  mutate(coalesce(
-    across(where(is.numeric),
-               ~ median(.x, na.rm = TRUE)))) %>% 
-  ungroup()
+  mutate(across(where(is.numeric), ~ coalesce(., median(., na.rm = TRUE))))
 ```
 
 ### Question 6
