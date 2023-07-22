@@ -104,3 +104,21 @@ energy_scotland %>%
   scale_x_continuous(breaks = c(unique(energy_scotland$year)))
 ```
 
+## Task 4
+
+Goal: calculate the average energy production for the Coal, Gas, and Oil 
+sectors across the time period in the data.
+
+Original code:
+```{r eval = FALSE}
+energy_scotland %>%
+  filter(sector == c("Coal", "Gas", "Oil")) %>%
+  group_by(sector) %>%
+  summarise(avg_energy_prod = mean(energy_prod))
+```
+
+Improved code:
+```{r}
+
+```
+
