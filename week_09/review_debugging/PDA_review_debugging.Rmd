@@ -1,0 +1,106 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework / PDA task review debugging
+
+First open libraries and datasets
+
+```{r}
+library(tidyverse)
+energy_scotland <- read_csv("data/energy_scotland.csv")
+energy_scotland
+```
+
+```{r}
+all_salaries <- read_csv("data/all_salaries.csv")
+all_salaries
+```
+
+## Task 1
+
+Goal: return the row in the data which has the maximum energy production, making 
+sure the code would work if new data was added to the dataset.
+
+Original code:
+```{r eval = FALSE}
+max(energy_scotland$energy_prod)
+# this returns value 25165.9 
+
+energy_scotland %>%
+  filter(energy_prod == 25165.9)
+```
+
+Improved code:
+```{r}
+# improve code by writing everything into single line/pipe
+energy_scotland %>% 
+  filter(energy_prod == max(energy_prod))
+
+```
+
+## Task 2
+
+Goal: create a new column called ‘rating’ to the energy table which will take the 
+following values in the table. The bins should be inclusive of the upper value e.g. 
+is the energy production is 20,000 exactly then will be ‘high’, if it’s 10,000 
+exactly then will be ‘medium’, etc.
+
+Original code:
+```{r eval = FALSE}
+rating <- if_else(energy_scotland$energy_prod > 20000, "very high", if_else(energy_scotland$energy_prod > 10000 & energy_scotland$energy_prod <= 20000, "high", if_else(energy_scotland$energy_prod > 5000 & energy_scotland$energy_prod <= 10000, "medium", if_else(energy_scotland$energy_prod > 2000 & energy_scotland$energy_prod <= 5000, "low", "very low"))))
+
+energy_scotland_rating <- bind_cols(energy_scotland, rating = rating)
+```
+
+Improved code:
+```{r}
+energy_scotland %>% 
+  mutate(rating = case_when(
+    energy_prod > 20000 ~ "very high",
+    energy_prod > 10000 & energy_prod <= 20000 ~ "high",
+    energy_prod > 5000 & energy_prod <= 10000 ~ "medium",
+    energy_prod > 2000 & energy_prod <= 5000 ~ "low",
+    TRUE ~ "very low"))
+```
+
+## Task 3
+
+Goal: create a plot which shows how the energy production for the sectors 
+renewables, gas and pumped hydro compare over time.
+
+Original code:
+```{r eval = FALSE}
+renewable <- energy_scotland %>%
+  filter(sector == "Renewables")
+
+gas <- energy_scotland %>%
+  filter(sector == "Gas")
+
+hydro <- energy_scotland %>%
+  filter(sector == "Pumped hydro")
+
+years <- unique(energy_scotland$year)
+
+ggplot() +
+  geom_line(aes(x = year, y = energy_prod,  color = sector), data = renewable) +
+  geom_line(aes(x = year, y = energy_prod, color = sector), data = gas) +
+  geom_line(aes(x = year, y = energy_prod, color = sector), data = hydro) +
+  scale_x_continuous(breaks = years) +
+  labs(title = "Energy production in Scotland over time split by sector", x ="Year", y = "Energy production")
+```
+
+Improved code:
+```{r}
+energy_scotland %>% 
+  filter(sector %in% c("Renewables", "Gas", "Pumped hydro")) %>% 
+  ggplot() +
+  aes(x = year, y = energy_prod) +
+  geom_line(aes(colour = sector)) +
+  labs(title = "Energy production in Scotland over time split by sector",
+       x = "Year", 
+       y = "Energy production") +
+  scale_x_continuous(breaks = c(unique(energy_scotland$year)))
+```
+
