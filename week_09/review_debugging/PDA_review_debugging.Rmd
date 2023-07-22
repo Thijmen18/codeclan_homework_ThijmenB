@@ -1,9 +1,16 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 # Homework / PDA task review debugging
+
+## PDA outcomes covered: From Working with Data (J4YB 35): 
+4.0 Test programs for data analysis
+4.4 Debugging
+4.5 Code review
 
 First open libraries and datasets
 
@@ -34,6 +41,9 @@ energy_scotland %>%
 
 Improved code:
 ```{r}
+# I avoid creating an extra object by using a single pipe and retrieving
+# the max number within a single filter function.
+
 # improve code by writing everything into single line/pipe
 energy_scotland %>% 
   filter(energy_prod == max(energy_prod))
@@ -56,6 +66,9 @@ energy_scotland_rating <- bind_cols(energy_scotland, rating = rating)
 
 Improved code:
 ```{r}
+# I improve the code by using a single case_when function
+# I make use of line breaks to make the code easy to read!
+
 energy_scotland %>% 
   mutate(rating = case_when(
     energy_prod > 20000 ~ "very high",
@@ -93,6 +106,12 @@ ggplot() +
 
 Improved code:
 ```{r}
+# I avoid creating unneccesary objects by using a single pipe.
+# I therefore pipe the output after a filter step to ggplot
+# I use the colour argument to colour the different lines instead of calling
+# geom_line individually for each line
+
+
 energy_scotland %>% 
   filter(sector %in% c("Renewables", "Gas", "Pumped hydro")) %>% 
   ggplot() +
@@ -119,6 +138,89 @@ energy_scotland %>%
 
 Improved code:
 ```{r}
+# I improve the code by correctly using the filter function with logical expression using: %in%
+# I group by sector and calculate the mean for each sector.
 
+energy_scotland %>% 
+  filter(sector %in% c("Coal", "Gas", "Oil")) %>% 
+  group_by(sector) %>% 
+  summarise(avg_energy_prod = mean(energy_prod))
 ```
 
+## Task 5
+
+```{r}
+student <- tibble(
+  Name = c("Brian", "David", "Karen"),
+  age = c(25, 56, 40),
+  location = c("Scotland", "England", "scotland"),
+  `email address` = c("briang@yahoo.co.uk", "dsmith@gmail.co.uk", "karen")
+)
+
+student
+```
+
+Goal: clean up this tibble by only returning the name, location and email address 
+information, putting the location information into lowercase and also creating a 
+new column called valid_email to have values TRUE or FALSE whether the email address 
+is valid. Here our definition is valid is that it contains an @ symbol followed 
+by a combination of lowercase characters or a . symbol.
+
+Original code:
+```{r eval = FALSE}
+student %>%
+  select(name, location, email_address) %>%
+  janitor::clean_names() %>%
+  str_to_lower(location) 
+  mutate(valid_email = str_detect(email_address, "@a-z.")
+```
+
+Improved code:
+```{r}
+# For clarity of the code, I use clean_names directly at start, when 'loading in' dataframe
+# I start by mutating location column to lower case
+# select the required columns and improve the regex code
+
+janitor::clean_names(student) %>%
+  mutate(location = str_to_lower(location)) %>% 
+  select(name, location, email_address) %>% 
+  mutate(valid_email = str_detect(email_address, "@[:alpha:]*|\\."))
+```
+
+## Task 6
+
+Goal: 
+1. create a function to work on the all_salaries dataframe 
+(or a similar dataframe that has a column salary and job_area). 
+
+A. The function should take in the dataframe (dataframe_input) 
+and a job area (job_area_input) and a salary value (salary_input). 
+
+B. The function should only return the employees in the dataframe that have a 
+salary above this value salary_input and who work in job area job_area_input.
+
+Original code:
+```{r eval = FALSE}
+subsetting_salaries <- function(dataframe_input,job_area_input,salary_input){ 
+  data <- dataframe_input %>% select(job_area) %>% filter(job_area == job_area_input)
+  data1 <- data[data$savings > salary_input, ]
+}
+
+subsetting_salaries(all_salaries, "Human Resources", 30000)
+```
+
+Improved code:
+```{r}
+# To avoid creating unnecessary objects, I use a single pipe
+# I only use filter functions to filter the required rows, which makes the code easy
+# to understand.
+
+subsetting_salaries <- function(dataframe_input, job_area_input, salary_input){
+  
+  dataframe_input %>% 
+    filter(job_area == job_area_input) %>% 
+    filter(salary > salary_input)
+}
+
+subsetting_salaries(all_salaries, "Legal", 30000)
+```
