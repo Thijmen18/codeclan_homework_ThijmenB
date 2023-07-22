@@ -1,0 +1,177 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework week 9 - PDA data transformation task
+
+### Question 1
+
+```{r}
+# Q1 - Load in the transaction data and create a column date from the day, month and year columns.
+
+# first load libraries
+library(tidyverse)
+
+# load in dataset
+toy_transactions <- read_csv("raw_data/toy_transactions.csv")
+
+# do some data exploration
+head(toy_transactions)
+#glimpse(toy_transactions)
+
+# create the column date from day, month, year
+transactions <- toy_transactions %>% 
+  mutate(date = make_datetime(year, month, day), .before = day)
+```
+
+### Question 2
+
+```{r}
+# Q2 - Load in the toys data and:
+# 1. Convert the weight column to numeric.
+
+toys <- read_csv("raw_data/toys.csv")
+
+toys_weight <- toys %>% 
+  mutate(weight = str_replace(weight, "[g]", replacement = "")) %>% 
+  mutate(weight = as.numeric(weight)) %>% 
+  rename(weight_g = weight)
+
+# 2. Split the extra information from the product into a new column, so you have 
+# two columns: product_name and product_title. Make sure you don’t have any extra 
+# whitespace in either column.
+
+toy_details <- toys_weight %>% 
+  mutate(product_name = str_extract(product, "- [:alpha:]+ ?[:alpha:]*")) %>% 
+  mutate(product_title = str_extract(product, "^[:alpha:]*.?[:alpha:]*.?[:alpha:]*")) %>% 
+  mutate(product_name = str_replace(product_name, "^- ", replacement = "")) %>% 
+  mutate(product_title = str_replace(product_title, " -$", replacement = "")) %>% 
+  select(!product) %>% 
+  rename(toy_id = id, quality_id = quality)
+
+```
+
+### Question 3
+
+```{r}
+# Q3 - Load in the dataset on quality labels and:
+# 1. Remove the unnecessary information for each descriptor
+
+quality_raw <- read_csv("raw_data/quality.csv")
+
+quality <- quality_raw %>% 
+  mutate(description = str_replace(description, "^Quality: ", replacement = "")) %>% 
+# 2. Replace the categories so ‘Awesome’ and ‘Very Awesome’ become ‘Good’ and 
+# ‘Very Good’. Do the same thing for ‘Awful’ replacing it with ‘Bad’.
+  mutate(description = recode(description,
+                              "Very Awesome" = "Very Good",
+                              "Awesome" = "Good",
+                              "Awful" = "Bad",
+                              "Very Awful" = "Very Bad")) %>% 
+  rename(quality_id = id)
+```
+
+### Question 4
+
+```{r}
+# Q4 - create a dataframe called customers which contains data on customers from 
+# all countries by reading in and binding all customer datasets in one pipeline
+
+library(fs)
+
+# create the dataframe combining all customer csv's
+customers_all <- dir_ls("raw_data/", regexp = "customers.csv$") %>% 
+  map_dfr(read_csv) %>% 
+  rename(customer_id = id)
+
+```
+
+### Question 5
+
+```{r}
+# Q5 - Impute missing values in numeric columns with the median value of customers 
+# with the same gender and country. 
+
+customers %>% 
+  group_by(customer_gender, customer_country) %>% 
+  mutate(across(
+    where(is.numeric)) =
+      coalesce(
+        across(where(is.numeric),
+               ~ mean(.x, na.rm = TRUE))))
+
+customers <- customers_all %>% 
+  group_by(customer_gender, customer_country) %>% 
+  mutate(coalesce(
+    across(where(is.numeric),
+               ~ median(.x, na.rm = TRUE)))) %>% 
+  ungroup()
+```
+
+### Question 6
+
+star-schema
+![Star Schema](star_schema.png){width=100%}
+
+### Question 7
+
+```{r}
+# Q7 - Join your four cleaned datasets together and call the joined dataset toys_joined. 
+# This join should keep all observations from all tables.
+
+toys_joined <- transactions %>% 
+full_join(customers, by = "customer_id") %>% 
+  full_join(toy_details, by = "toy_id") %>% 
+  left_join(quality, by = "quality_id")
+```
+
+### Question 8
+
+Are there any ethical and legal considerations with storing this data in its current state?
+
+Answer: <br>
+We want to follow ethical considerations and privacy regulations. We therefor 
+want to anonymise this dataset in order to make sure that this data cannot be
+traced back to a single identifiable person.
+
+### Question 9
+
+```{r}
+# Q9 - Remove any personally identifiable or sensitive information on customers
+
+# I will make data rows anonymous by removing all but initials
+
+toys_joined_anonymous <- toys_joined %>% 
+  mutate(first_name = str_sub(first_name, start = 1, end = 1)) %>% 
+  mutate(last_name = str_sub(last_name, start = 1, end = 1))
+
+```
+
+### Question 10
+
+```{r}
+# Q10 - Write your new joined dataset (which does not contain personal/sensitive information) to a csv file
+
+toys_joined_anonymous %>% 
+write_csv("toy_purchases_anonymous.csv")
+```
+
+### Question 11
+
+Use a .gitignore file to make sure the raw data on customers which still 
+contains personal/sensitive information is not pushed up to your PDA GitHub.
+
+```{r}
+# add the following sensitive customer info files to gitignore:
+
+files_to_ignore <- dir_ls("raw_data/", regexp = "customers.csv$") %>% 
+  str_sub(start = 10) 
+  
+# write text file containing the names
+writeLines(files_to_ignore, "ignore_files.txt")
+
+# And add these files to the gitignore file (see screenshot provided as evidence!)
+```
+
+
