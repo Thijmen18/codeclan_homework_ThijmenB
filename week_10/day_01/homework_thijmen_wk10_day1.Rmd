@@ -1,0 +1,114 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework week 10 - day 01
+
+## Question 1
+
+Load the data into a dataframe project
+```{r}
+library(tidyverse)
+
+project <- read_csv("data/project_management.csv")
+
+head(project)
+```
+
+## Question 2
+Plot the data, taking estimated_length as the independent variable and actual_length 
+as the dependent variable.
+
+```{r}
+project %>% 
+  ggplot(aes(x = estimated_length, y = actual_length)) +
+  geom_point()
+```
+
+## Question 3
+
+Calculate the correlation coefficient of estimated_length and actual_length and 
+interpret the value you obtain.
+```{r}
+project %>% 
+  summarise(correlation_coef = cor(estimated_length, actual_length))
+```
+Pearson correlation coefficient r = 0.805 indicating there is a very strong positive 
+correlation between estimated_length and actual_length.
+
+Actual_length is higher when estimated_length is higher
+
+## Question 4
+
+Perform a simple linear regression using actual_length as the dependent variable, and estimated_length as the independent variable. Save the model object to a variable.
+
+```{r}
+model_length <- lm(formula = actual_length ~ estimated_length, data = project)
+
+model_length
+```
+
+## Question 5
+
+Interpret the regression coefficient of estimated_length (i.e. slope, gradient) 
+you obtain from the model. How do you interpret the r2
+ value reported by the model?
+ 
+__Answer:__
+The regression coefficient b1 (or b estimated_length here) links outcome and explanatory variables as follows:
+
+A one unit increase in explanatory variable, changes the outcome variable value by b1:
+An increase in 1 day of actual_length, changes the estimated_length by 1.223!
+
+## Question 6
+
+Is the relationship statistically significant? Remember, to assess this you need to check the p
+-value of the regression coefficient (or slope/gradient). 
+But you should first check the regression diagnostic plots to see if a linear regression model is appropriate and therefore if the p
+-value will be reliable (don’t worry about any outlier points you see in the diagnostic plots, we’ll return to them in the extension).
+
+```{r}
+# diagnositics plots
+library(performance)
+library(see)
+
+check_model(model_length)
+```
+
+```{r}
+# alternative
+library(ggfortify)
+
+autoplot(model_length)
+```
+
+Residuals vs. fitted:
+plot tests independance of residuals. 
+This plot helps to see whether predictors may have a non-linear relationship with the outcome, in which case the reference line may roughly indicate that relationship. A straight and horizontal line indicates that the model specification seems to be ok. But for instance, if the line would be U-shaped, some of the predictors probably should better be modeled as quadratic term.
+
+Blue line is relatively nicely following horizontal 0 line, which indicates residuals 
+are similar in data and thus independent.
+
+Normal-qq:
+Checks if residuals follow a normal distribution (expected). So ok
+
+Scale-location:
+shows if there is a constant variation in the residuals. Not spread to much
+from the blue line. The blue line follows a relatively constant pattern (slightly curved)
+
+Based on diagnostics, __I conclude that a linear regression model is appropriate!__
+
+Question: Is the relationship statistically significant?
+
+```{r}
+library(broom)
+glance(model_length)
+tidy(model_length)
+```
+r.squared = 0.64 so, 64% of variation in y can be explained by variation in x.
+Note: for simple linear regression r^2 will equal the square of r (correlation coefficient)
+The higher r.squared means a better fit of the data!
+
+p-value is 1.9e-12, so we can conclude that the relationship between 
+estimated_length and actual_length is statistically significant.
