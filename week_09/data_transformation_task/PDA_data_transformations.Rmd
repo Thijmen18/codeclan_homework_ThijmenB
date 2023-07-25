@@ -37,6 +37,8 @@ head(toy_transactions)
 # create the column date from day, month, year
 transactions <- toy_transactions %>% 
   mutate(date = make_datetime(year, month, day), .before = day)
+
+transactions
 ```
 
 ### Question 2
@@ -52,17 +54,28 @@ toys_weight <- toys %>%
   mutate(weight = as.numeric(weight)) %>% 
   rename(weight_g = weight)
 
+toys_weight
+
 # 2. Split the extra information from the product into a new column, so you have 
 # two columns: product_name and product_title. Make sure you don’t have any extra 
 # whitespace in either column.
 
+# old method ( please skip!)
+# toy_details <- toys_weight %>% 
+#  mutate(product_name = str_extract(product, "- [:alpha:]+ ?[:alpha:]*")) %>% 
+#  mutate(product_title = str_extract(product, "^[:alpha:]*.?[:alpha:]*.?[:alpha:]*")) %>% 
+#  mutate(product_name = str_replace(product_name, "^- ", replacement = "")) %>% 
+#  mutate(product_title = str_replace(product_title, " -$", replacement = "")) %>% 
+#  select(!product) %>% 
+#  rename(toy_id = id, quality_id = quality)
+
+# Or alternatively (safer and much easier!):
+
 toy_details <- toys_weight %>% 
-  mutate(product_name = str_extract(product, "- [:alpha:]+ ?[:alpha:]*")) %>% 
-  mutate(product_title = str_extract(product, "^[:alpha:]*.?[:alpha:]*.?[:alpha:]*")) %>% 
-  mutate(product_name = str_replace(product_name, "^- ", replacement = "")) %>% 
-  mutate(product_title = str_replace(product_title, " -$", replacement = "")) %>% 
-  select(!product) %>% 
+  separate(col = "product", sep = " - ", into = c("product_name", "product_title")) %>% 
   rename(toy_id = id, quality_id = quality)
+
+toy_details
 
 ```
 
@@ -84,6 +97,8 @@ quality <- quality_raw %>%
                               "Awful" = "Bad",
                               "Very Awful" = "Very Bad")) %>% 
   rename(quality_id = id)
+
+quality
 ```
 
 ### Question 4
@@ -99,6 +114,7 @@ customers_all <- dir_ls("raw_data/", regexp = "customers.csv$") %>%
   map_dfr(read_csv) %>% 
   rename(customer_id = id)
 
+customers_all
 ```
 
 ### Question 5
@@ -110,6 +126,8 @@ customers_all <- dir_ls("raw_data/", regexp = "customers.csv$") %>%
 customers <- customers_all %>% 
   group_by(customer_gender, customer_country) %>% 
   mutate(across(where(is.numeric), ~ coalesce(., median(., na.rm = TRUE))))
+
+customers
 ```
 
 ### Question 6
@@ -127,6 +145,8 @@ toys_joined <- transactions %>%
 full_join(customers, by = "customer_id") %>% 
   full_join(toy_details, by = "toy_id") %>% 
   left_join(quality, by = "quality_id")
+
+toys_joined
 ```
 
 ### Question 8
@@ -143,12 +163,13 @@ traced back to a single identifiable person.
 ```{r}
 # Q9 - Remove any personally identifiable or sensitive information on customers
 
-# I will make data rows anonymous by removing all but initials
+# Let's remove columns that hold sensitive information:
 
 toys_joined_anonymous <- toys_joined %>% 
-  mutate(first_name = str_sub(first_name, start = 1, end = 1)) %>% 
-  mutate(last_name = str_sub(last_name, start = 1, end = 1))
+  select(-first_name, -last_name, -customer_age, -customer_gender, -customer_height_cm,
+         -customer_weight_kg)
 
+toys_joined_anonymous
 ```
 
 ### Question 10
@@ -171,6 +192,8 @@ contains personal/sensitive information is not pushed up to your PDA GitHub.
 files_to_ignore <- dir_ls("raw_data/", regexp = "customers.csv$") %>% 
   str_sub(start = 10) 
   
+files_to_ignore
+
 # write text file containing the names
 writeLines(files_to_ignore, "ignore_files.txt")
 

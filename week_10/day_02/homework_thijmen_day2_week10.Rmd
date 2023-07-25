@@ -1,0 +1,224 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework Week 10 - day 2
+
+## Question 1
+
+Load the housing_prices.csv data set and undertake an initial exploration of the 
+data. You will find details on the data set on the relevant Kaggle page
+```{r}
+library(tidyverse)
+library(skimr)
+
+housing_prices <- read_csv("data/housing_prices.csv")
+
+head(housing_prices)
+skim(housing_prices)
+
+```
+
+## Question 2
+
+We expect the total_rooms of houses to be strongly correlated with total_bedrooms. 
+Use ggpairs() to investigate correlations between these two variables.
+
+```{r}
+library(GGally)
+library(ggfortify)
+
+ggpairs(housing_prices)
+
+housing_prices %>% 
+ggcorr(label = TRUE)
+```
+We see that there is a strong correlation between total_rooms and total_bedrooms! 0.9!
+
+## Question 3
+
+So, we do find significant correlations. Let’s drop total_bedrooms from the dataset, 
+and use only total_rooms going forward.
+
+```{r}
+
+house_price <- housing_prices %>% 
+  select(-total_bedrooms)
+```
+
+## Question 4
+
+We are interested in developing a regression model for the median_house_value of 
+a house in terms of the possible predictor variables in the dataset.
+
+### subq I
+
+Use ggpairs() to investigate correlations between median_house_value and the 
+predictors (this may take a while to run, don’t worry, make coffee or something).
+
+```{r}
+ggpairs(house_price)
+```
+So from ggpairs, we see that strongest correlation (with median_house_value) is found with:
+1. median_income (0.643)
+
+### subq II
+
+```{r}
+house_price %>% 
+  ggplot() +
+  aes(y = median_house_value, x = median_income) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+## Question 5
+
+Shortly we may try a regression model to fit the categorical predictor ocean_proximity. 
+Investigate the level of ocean_proximity predictors. 
+How many dummy variables do you expect to get from it?
+
+```{r}
+house_price %>% 
+  select(ocean_proximity) %>% 
+  distinct()
+
+house_price %>% 
+  group_by(ocean_proximity) %>% 
+  summarise(total_rows = n())
+```
+So there are 5 distinct values for the variable ocean_proximity. We therefore only need
+4 dummy variables in total.
+
+The `Island` variable category has only sow few instances, so we can combine it with `Near Ocean` 
+
+So we will than only need 3 dummy variables in total.
+
+## Question 6
+
+Start with simple linear regression. Regress median_house_value on median_income 
+and check the regression diagnostics.
+
+```{r}
+model_1 <- lm(median_house_value ~ median_income, house_price)
+
+summary(model_1)
+autoplot(model_1)
+```
+
+_Based on plots:_
+- 1st plot, we expect a straight blue line around zero. 
+  This seems to be the case, but not all points are equally distributed around it.
+  indicating that pattern in data is closely resembling a linear relation. I think that there
+  is such a strong border between residuals and not because the house_value does not go higher than a certain number
+  
+- 2nd plot, besides some extreme values. Mostly all located on straight line, indicating an
+  normal distribution of residuals
+  
+- 3rd plot, shows level of homoscedacity. In this case variance in data seems to be 
+reasonable equally divided (higher towards higher x)
+
+- 4th plot, no extreme values have a high leverage on the data. All good.
+
+_Based on summary stats:_
+- The estimate column shows us that every unit increase in x = 39987 increase in y 
+
+- The p-value indicates that there is reason to reject H0, indicating that there is a 
+very high reason to believe the relationship is significant.
+
+- And the intercept is at 45457
+
+## Question 7
+
+Add another predictor of your choice. Check your assumptions, diagnostics, and 
+interpret the model.
+
+```{r}
+#based on above ggpair plot, there is also a correlation with total_rooms and median_house_value
+#So lets add that variable
+
+model_2 <- lm(median_house_value ~ median_income + total_rooms, house_price)
+
+autoplot(model_2)
+```
+Looking at the plots:
+- 1st plot seems to have improved. Residuals are now somewhat more equally distributed around 0
+- 2nd plot still relatively curvy
+- 3rd plot similarly bad
+- 4th plot still ok
+
+```{r}
+summary(model_2)
+```
+
+- The estimate column shows us that:
+      -> every unit increase in median_income = 4.000e+04 increase in y 
+      -> every unit increase in total_rooms =  -4.428e-02 decrease in y  
+      
+          --->>> HOW??? ASK??! In GGpairs, we saw its a positive correlation! But actually not significant!
+
+- The p-value indicates that:
+      -> For median income there is reason to reject H0, indicating that there is a 
+      very high reason to believe the relationship is significant.
+      -> For total_rooms, p-value is high, and we cannot reject H0: = no significant relation.
+
+- And the intercept is at 4.552e+04
+
+## Extension question 8
+
+Try adding an interaction between log(median_income) and your chosen categorical 
+predictor. Do you think this interaction term is statistically justified?
+
+```{r}
+model_3 <- lm(median_house_value ~ log(median_income) + total_rooms, house_price)
+
+autoplot(model_3)
+# All plots now, look much better!
+```
+```{r}
+# Lets create a model with the categorical predictor and log(median_income)
+
+house_price_dummy <- house_price %>% 
+  mutate(ocean_proximity = recode(ocean_proximity, "ISLAND" = "NEAR OCEAN")) %>% 
+  fastDummies::dummy_cols(select_columns = "ocean_proximity", remove_first_dummy = TRUE, remove_selected_columns = TRUE) %>% 
+  clean_names()
+
+house_price_dummy
+```
+
+```{r}
+model_4 <- lm(median_house_value ~ log(median_income) + ocean_proximity_near_ocean, house_price_dummy)
+
+autoplot(model_4)
+# quick look at plots: points are now better spread over x. But plots did not necessarily improve!
+# e.g. first plot, blue line no longer flat..
+```
+
+
+
+
+
+```{r}
+summary(model_4)
+```
+
+## Question 9
+
+Find and plot an appropriate visualisation to show the effect of this interaction
+
+
+```{r}
+house_price_dummy %>% 
+  ggplot() +
+  aes(y = median_house_value, x = log(median_income)) +
+  geom_point() +
+  facet_wrap(~ ocean_proximity_near_ocean)
+
+
+```
+
+
+
+
+

@@ -55,11 +55,25 @@ Interpret the regression coefficient of estimated_length (i.e. slope, gradient)
 you obtain from the model. How do you interpret the r2
  value reported by the model?
  
+```{r}
+summary(model_length)
+```
+ 
 __Answer:__
+The regression equation is:
+
+actual_lengthˆ=1.4164+1.2235×estimated_length
+so a 1
+ day increase in estimated_length is associated with a 1.2235
+ day increase in actual_length, i.e. the company is underestimating job lengths.
+
+The r2
+ value tells us that approximately 65%
+ of the variation in actual_length can be predicted from the variation in estimated_length.
+
+
 The regression coefficient b1 (or b estimated_length here) links outcome and explanatory variables as follows:
 
-A one unit increase in explanatory variable, changes the outcome variable value by b1:
-An increase in 1 day of actual_length, changes the estimated_length by 1.223!
 
 ## Question 6
 
@@ -82,6 +96,17 @@ library(ggfortify)
 
 autoplot(model_length)
 ```
+```{r}
+# method by John (also get a histogram of residuals)
+
+par(mfrow = c(2,3))
+plot(model_length)
+hist(model_length$residuals)
+
+# plot all at same time!
+```
+
+
 
 Residuals vs. fitted:
 plot tests independance of residuals. 
