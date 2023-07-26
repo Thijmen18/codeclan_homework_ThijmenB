@@ -1,0 +1,276 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Homework week 10 - day 3
+
+Manual model development
+
+You are given a set of data on housing sale prices for the last few years in 
+King County (near Seattle) between May 2014 and May 2015.
+
+We want you to build an explanatory model for the price of housing in King County, 
+i.e. an interpretable model in which the included variables are statistically justifiable.
+
+```{r}
+library(tidyverse)
+library(fastDummies)
+library(mosaicData)
+library(tidyverse)
+library(janitor)
+library(GGally)
+library(ggfortify)
+library(mosaic)
+library(skimr)
+```
+### Question 1
+
+Load in data, explore and decide what to do with variables
+
+```{r}
+house_prices <- read_csv("data/kc_house_data.csv")
+```
+
+```{r}
+head(house_prices)
+```
+
+```{r}
+# columns date, id, sqft_living15, sqft_lot15 and zipcode non informative
+house_tidy <- house_prices %>% 
+  select(-id, -date, -sqft_living15, -sqft_lot15, -zipcode) %>% 
+  #waterfront is a logical, TRUE/FALSE so lets convert:
+  mutate(waterfront = if_else(waterfront > 0, TRUE, FALSE)) %>% 
+#lets convert yr_renovated into a logical also, to see if renovation has a effect
+ mutate(renovated = if_else(yr_renovated > 0, TRUE, FALSE)) %>%
+  select(-yr_renovated) %>% 
+  # Variables, 'view', 'condition' and 'grade' can be seen as ordinal data.
+  # they are representing non-mathematical ideas (eventhough written here as number)
+  mutate(view = as_factor(view),
+         condition = as_factor(condition),
+         grade = as_factor(grade))
+```
+
+```{r}
+house_tidy 
+```
+
+### Question 2
+
+Check for aliased variables using the alias() function (this takes in a formula object and a data set).
+
+```{r}
+alias(lm(price ~ ., data = house_tidy))
+```
+
+So based on this output we see that sqft_basement can be calculated as:
+sqft_basement = 1 * sqft_living + -1 * sqft_above
+
+So I suggest to remove sqft_basement
+
+
+```{r}
+house_tidy_2 <- house_tidy %>% 
+  select(-sqft_basement)
+```
+
+```{r}
+alias(lm(price ~ ., data = house_tidy_2))
+```
+Success!!!
+
+### Question 3
+
+Systematically build a regression model containing up to four main effects 
+(remember, a main effect is just a single predictor with coefficient), testing 
+the regression diagnostics as you go * splitting datasets into numeric and 
+non-numeric columns might help ggpairs() run in manageable time, although you will 
+need to add either a price or resid column to the non-numeric dataframe in order to 
+see its correlations with the non-numeric predictors.
+
+```{r}
+# start checking correlations for numeric only first, than non-numeric..
+# to keep things manageable!
+
+# Numeric
+house_tidy_numeric <- house_tidy_2 %>% 
+  select_if(is.numeric)
+
+# non-numeric
+house_tidy_nonnum <- house_tidy_2 %>% 
+  select_if(~!is.numeric(.))
+
+# add price column to the non-numeric data
+house_tidy_nonnum$price <- house_tidy_2$price
+```
+
+__First predictor__
+First ggpairs of numeric variables:
+```{r}
+ggpairs(house_tidy_numeric)
+```
+
+Based on the plot, highest correlation with price = sqft_living
+Let's create a model:
+
+```{r}
+model_1 <- lm(price ~ sqft_living, house_tidy_2)
+
+autoplot(model_1)
+summary(model_1)
+
+# Residual standard error: 261500
+# Multiple R-squared:  0.4929
+# significant relation
+```
+
+__Second predictor__
+
+__Question: why do we add the residuals and check correlations using that?__
+
+```{r}
+library(modelr)
+
+house_tidy_numeric_remaining_resid <- house_tidy_numeric %>% 
+  add_residuals(model_1) %>% 
+  select(-c("price", "sqft_living"))
+
+
+ggpairs(house_tidy_numeric_remaining_resid)
+```
+
+Based on the plot, highest correlation now with residuals = latitude
+Let's add it as predictor to our model:
+
+```{r}
+model_2 <- lm(price ~ sqft_living + lat, house_tidy_2)
+
+autoplot(model_2)
+summary(model_2)
+
+# Residual standard error: 241900
+# Multiple R-squared: 0.566
+# significant relation
+
+#Improved in comparison to model_1:
+
+# Residual standard error: 261500
+# Multiple R-squared:  0.4929
+# significant relation
+```
+
+Improved in comparison to model_1, so let's continue and add another predictor
+
+```{r}
+# we add the residuals of our second model to check for correlations with remaining predictors:
+
+house_tidy_numeric_remaining_resid <- house_tidy_numeric %>% 
+  add_residuals(model_2) %>% 
+  select(-c("price", "sqft_living", "lat"))
+
+
+ggpairs(house_tidy_numeric_remaining_resid)
+```
+
+Based on the plot, all correlations are pretty weak, so I want to check the 
+non-numerical dataset now...!
+
+```{r message = FALSE}
+ggpairs(house_tidy_nonnum)
+```
+Based on this plot, it looks like "grade" has an effect on the price. The boxplots
+of grade show splitting.  So lets add grade to our model as 
+predictor
+
+```{r}
+
+model_3 <- lm(price ~ sqft_living + lat + grade, house_tidy_2)
+
+autoplot(model_3)
+summary(model_3)
+
+# Residual standard error: 219000
+# Multiple R-squared: 0.6443
+# significant relation
+
+#Improved in comparison to model_2:
+
+# Residual standard error: 241900
+# Multiple R-squared: 0.566
+# significant relation
+
+```
+
+Let's also check if adding the categorical predictor 'grade' is also statistically justified:
+
+```{r}
+anova(model_2, model_3)
+```
+
+
+Improved in comparison to model_2, and adding "grade" is statistically justified!
+so let's continue and add another predictor
+
+```{r message = FALSE}
+# we add the residuals of our third model to check for correlations with remaining predictors:
+
+#Unfortunately not working: as numerical variables from model non-existing in house_tidy_nonnum
+# Question: is this true?
+
+#house_tidy_nonnumeric_remaining_resid <- house_tidy_nonnum %>% 
+ # add_residuals(model_3) %>%
+#  select(-c("price", "grade"))
+
+# so scale up to everything:
+
+house_tidy_remaining_resid <- house_tidy_2 %>% 
+  add_residuals(model_3) %>% 
+  select(-c("price", "grade", "sqft_living", "lat"))
+ 
+
+
+ggpairs(house_tidy_remaining_resid)
+
+
+```
+
+__question: how to deal with the size of this plot?__
+
+```{r}
+colnames(house_tidy_remaining_resid)
+```
+
+
+
+Difficult to see, but it looks like predictor "year_built" has still a negative correlation
+with the price.
+Let's add to our model
+
+```{r}
+model_4 <- lm(price ~ sqft_living + lat + grade + yr_built, house_tidy_2)
+
+autoplot(model_4)
+summary(model_4)
+
+# Residual standard error: 209500
+# Multiple R-squared: 0.6747
+# significant relation
+
+#Improved in comparison to model_2:
+
+# Residual standard error: 219000
+# Multiple R-squared: 0.6443
+# significant relation
+
+#Improved in comparison to model_2:
+```
+
+Adding year built improved the model, and is significnat.
+
+The final regression model containing four main effects =
+
+price ~ sqft_living + lat + grade + yr_built
+
+
+

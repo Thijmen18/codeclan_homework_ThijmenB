@@ -29,7 +29,9 @@ Use ggpairs() to investigate correlations between these two variables.
 library(GGally)
 library(ggfortify)
 
-ggpairs(housing_prices)
+housing_prices %>% 
+  select(total_rooms, total_bedrooms) %>% 
+  ggpairs()
 
 housing_prices %>% 
 ggcorr(label = TRUE)
@@ -73,6 +75,14 @@ house_price %>%
   geom_smooth(method = "lm")
 ```
 
+```{r}
+house_price %>% 
+  ggplot(aes(x = ocean_proximity, y = median_house_value)) +
+  geom_boxplot()
+```
+
+
+
 ## Question 5
 
 Shortly we may try a regression model to fit the categorical predictor ocean_proximity. 
@@ -105,6 +115,9 @@ model_1 <- lm(median_house_value ~ median_income, house_price)
 
 summary(model_1)
 autoplot(model_1)
+
+## Based on pushed answers:
+# the residuals plots looks alright but there is some evidence to indicate skewness.
 ```
 
 _Based on plots:_
@@ -164,6 +177,27 @@ summary(model_2)
       -> For total_rooms, p-value is high, and we cannot reject H0: = no significant relation.
 
 - And the intercept is at 4.552e+04
+
+-------------
+Based on the answers:
+```{r}
+mod2_proximity <- lm(median_house_value ~ median_income + ocean_proximity, data = house_price)
+summary(mod2_proximity)
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(mod2_proximity)
+```
+```{r}
+# The predictors median income and ocean_proximity explains 55% of the variation 
+# in the median_house_value. In addition, these predictors are also significant. 
+# For every increase in median income by 1 unit, the median house price increases 
+# by 35118.0 if all other predictors remain the same. If the house is on an island, 
+# the median house price increases by 200,480.2 if all other predictors remain the same.
+```
+
+
 
 ## Extension question 8
 
