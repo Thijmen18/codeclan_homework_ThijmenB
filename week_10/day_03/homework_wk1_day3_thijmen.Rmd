@@ -257,13 +257,13 @@ summary(model_4)
 # Multiple R-squared: 0.6747
 # significant relation
 
-#Improved in comparison to model_2:
+#Improved in comparison to model_3:
 
 # Residual standard error: 219000
 # Multiple R-squared: 0.6443
 # significant relation
 
-#Improved in comparison to model_2:
+#Improved in comparison to model_3:
 ```
 
 Adding year built improved the model, and is significnat.
@@ -274,3 +274,46 @@ price ~ sqft_living + lat + grade + yr_built
 
 
 
+## Extension
+
+1. 
+Consider possible interactions between your four main effect predictors and test their effect upon r2
+. Choose your best candidate interaction and visualise its effect.
+
+```{r}
+# lets check the interaction between grade and yr_built, as it is likely that
+# there is an interaction between these.
+
+model_5 <- lm(price ~ sqft_living + lat + grade + yr_built + yr_built:grade, house_tidy_2)
+
+autoplot(model_5)
+summary(model_5)
+
+# Residual standard error: 204900
+# Multiple R-squared: 0.6889
+# significant effect of the interaction on price for some interaction pairs
+
+#Improved in comparison to model_4:
+
+# Residual standard error: 209500
+# Multiple R-squared: 0.6747
+# significant relation
+
+```
+
+2. 
+Calculate the relative importance of predictors from your best 4
+-predictor model (i.e. the model without an interaction). Which predictor affects price most strongly?
+
+```{r}
+library(relaimpo)
+
+calc.relimp(model_4, type = "lmg", rela = TRUE)
+```
+
+So, we see by this measure that _grade_ is most important (accounting for 45%
+ of r2
+), followed by _sqft_living_ (41%
+), then _latitude_ (9%
+), and finally the _yr_built_ (4%
+).
