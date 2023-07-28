@@ -1,0 +1,246 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Day 3 - homework review - recap Manual Model Development
+
+```{r}
+library(tidyverse)
+library(fastDummies)
+library(mosaicData)
+library(tidyverse)
+library(janitor)
+library(GGally)
+library(ggfortify)
+library(mosaic)
+library(skimr)
+```
+
+
+Step by step model building:
+
+- First question: What does 1 row represent?
+    -> Here, a house (great, because we like granular version of data (single representation))
+    -> So we are making a model for the average individual house price
+    
+- Acquaint ourselves: What do the variables represent?
+    -> pipe skim output in view(), to see each variable per row
+    -> numerical data is generally positive skewed (right skewed)
+        -> A positive skewed numerical variable is difficult to add as predictor 
+        (or describing best the extreme values at right or left) This is where 
+        __Feature engineering__ comes in here.
+        - For example by doing log transformation (making a right skewed, log normal)
+          You squeeze the extreme values to a more normal distribution.
+          
+_Feature Engineering_: taking raw materials making more useful.
+
+- Part of this is also, how to make your data more representative?
+
+- So for example a log transformation for rightskewed data.
+(transforms the x axes into set multiplied steps)
+
+-> So you see rightskewed variables, (e.g. currency, count data) 
+  -> and you just immediately log transform it.
+
+```{r}
+
+houses <- read_csv("data/kc_house_data.csv")
+
+# e.g. for price:
+
+houses %>% 
+  ggplot(aes(x = price)) +
+  geom_histogram() +
+scale_x_continuous(trans = "log10")
+
+houses_logged <- houses %>% 
+  mutate(ln_house_price = log(price))
+
+# e.g. for grade:
+# grade is now numerical, but we have too little information to assume 
+# that grade 10 is twice as good as 5.
+
+houses %>% 
+  ggplot(aes(x = grade, y = price)) +
+  geom_point() 
+
+# If we treat it as a categoric, we than give the model one grade "as one arm"
+# You model than gets a separate coefficient for every category (= every grade)
+# which is good, because each grade represents something else, a different grade.
+houses %>% 
+  ggplot(aes(x = as.factor(grade), y = price)) +
+  geom_boxplot() 
+```
+
+Based on this plot, we could also conclude that grade 1-6 are very similar in result, 
+so we could decide to combine.
+- But we like to get more information first, e.g. google grade
+- also check the summary stats of your model, when all grade variables are included individually
+do we see a significant impact?
+
+
+-> There is some critique on step-by-step regression model making
+  - it might be that the effects are actually false effect you are seeing.
+  - might be best to start somewhere in the middle and have best predictors added at once
+  - and than see if you want to include more.
+
+```{r}
+summary(lm())
+```
+
+```{r}
+colnames(houses)
+
+houses_tidy <- houses %>%
+  select(-c("id", "date", "sqft_living15", "sqft_lot15", "zipcode")) %>%
+  mutate(waterfront = as.logical(waterfront)) %>%
+  mutate(renovated = yr_renovated != 0) %>%
+  select(-yr_renovated) %>%
+  mutate(view = as_factor(view)) %>% 
+  mutate(condition = as_factor(condition)) %>%
+  mutate(grade = as_factor(grade))
+```
+
+```{r}
+#splitting data in numeric and non-numeric
+houses_tidy_numeric <- houses_tidy %>%
+  select_if(is.numeric)
+
+houses_tidy_nonnumeric <- houses_tidy %>%
+  select_if(function(x) !is.numeric(x))
+
+houses_tidy_nonnumeric$price <- houses_tidy$price
+```
+
+```{r}
+#ggpairs(houses_tidy_numeric)
+```
+
+
+Making ggpairs easier to work with:
+- subset (only selecting few columns)
+- silence text output
+- ggsave it
+
+- use ggsave() , you will save the most recent plot e.g. ("ggpairs_num.png")
+
+```{r}
+# you can increase the dimensions:
+#ggsave("ggpairs_num.png", width = 15, height = 15)
+```
+
+
+Let's built the model
+```{r}
+model <- lm(price ~ sqft_above, houses_tidy)
+model_2 <- lm(price ~ sqft_above + grade, houses_tidy)
+
+summary(model)
+summary(model_2)
+```
+
+-> WHat to do with the data if not all categoric categories are turning out to be significant.
+    1 - e.g. see if grouping does make sense (group those categories that are non significnat)
+      -> however! These groups need to be justifiable to group, e.g. don't group 
+      high with low.. Grouping needs to make SENSE!
+    2 - NEVER JUST IGNORE THE NON SIGNIFICNAT and keep using the numbers from the entire
+    model
+    3 - do ANOVA test: e.g. test if adding categorie does help in creating better model
+      Can we justify adding all categories of grade?
+      -> its all or none for the ANOVA
+    
+```{r}
+anova(model, model_2)
+
+# it test the whole model as a whole
+```
+-> So we see p-value being significant. And this means that we have evidence that model
+is better when all categories are added. We add grade.
+
+```{r}
+houses_tidy <- houses_tidy %>% 
+  mutate(grade_grouped = as.factor(if_else(as.numeric(grade) < 8, 7, as.numeric(grade))))
+         
+model_3 <- lm(price ~ sqft_above + grade, houses_tidy)
+        
+summary(model_3)
+
+```
+
+```{r}
+plot(model_2)
+```
+
+-> First plot shows (pattern presence in residuals) that each point is a residual, this is how "wrong" we are.
+ - the plot shows a pattern, there are clumps of points representing the grades.
+ reason why data is still somewhat scattered is due to influence of sqft_above
+ 
+ - we also see a cone shape: this indicates that we underpredict prices for low house prices and
+ overpredict prices for high houseprices
+ -> this could be due to the fact that we did not do a log transformation on price.
+ it makes it more difficult to predict the prices of the more extreme sides.
+ 
+ This is not OK, we see a strong pattern here
+ 
+-> Next plot, is the q-q-plot. Showing if the residuals are following a normal distribution
+  - inevitably, it will always come of towards the end.
+  - but in this plot, there is a symmetry in the way we are wrong in the extremes.
+  - again, here: it is indicative that we need a log transformation
+  - test: normality of residuals
+
+-> third plot, here all residuals are all made positive.
+  - main question here: by our guess how wrong are we?
+  - we see heteroscedacity. We want homoscedacity: we want to be equally wrong throughout the data
+  - we see here that we increasinly get more wrong towards higher house prices.
+  
+It is very difficult to say, this is the pooint that it is wrong.
+ -> it is an indication to improve the model, based on comapring the graphs. 
+ -> think what the models say to help understand it better.
+ 
+```{r}
+library(modelr)
+```
+
+How to see the residuals:
+```{r}
+houses_model <- houses_tidy %>% 
+  add_residuals(model_2)
+
+houses_model
+# now we can see how wrong our prediction is per house price.
+```
+
+-> We add residuals back to the data (based on model with few predictors)
+  - these residuals now contain information on the error (prediction vs real price)
+  - so you want to explore which other predictors can help in explaining the parts that we were not able 
+  to predict just yet. As represented by the residuals.
+  
+  Thats why ggpairs steps = 1. response
+                            2.+ look st residuals.
+                            
+---
+look at summery overview of your model
+
+```{r}
+summary(model_2)
+```
+
+- Degrees of freedom = just to do with how many unique predictions we use
+  -> it is really only informative with few datapoints. e.g. it looks like you need too many predictors 
+  to predict the data (consisting of very few data points)
+
+- Residual standard error actually says how much wrong you are in units of your Y (dependent variable)
+
+```{r}
+summary(model)
+```
+
+- Based on coefficients above, price is going up by 268 pounds with every unit increase in sqft
+
+Based on models, you can try to predict:
+  - people on a website calculating their houseprices based on their own numbers
+  - as company predict who is going to renew their policy?
+
+
+

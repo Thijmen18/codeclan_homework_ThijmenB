@@ -200,6 +200,8 @@ summary(model_3)
 # Multiple R-squared: 0.566
 # significant relation
 
+
+
 ```
 
 Let's also check if adding the categorical predictor 'grade' is also statistically justified:
