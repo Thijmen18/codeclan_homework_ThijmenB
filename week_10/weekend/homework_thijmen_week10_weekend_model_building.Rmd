@@ -1,0 +1,595 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework - Week 10 - Weekend
+
+## Part 1 - Questions
+
+__1__
+I want to predict how well 6 year-olds are going to do in their final school exams. 
+Using the following variables am I likely under-fitting, fitting well or over-fitting? 
+Postcode, gender, reading level, score in maths test, date of birth, family income.
+
+_Answer_: 
+You are likely overfitting, as variables like postcode, gender, date of birth and family income
+might help in explaining data for a particular training dataset. These variables have likely
+not much to do with exam results for 6-year olds outside the training set.
+
+__2__
+If I have two models, one with an AIC score of 34,902 and the other with an AIC 
+score of 33,559 which model should I use?
+
+_Answer_:
+For AIC scores: the lower the better. So in this case a model with AIC 33,559.
+
+__3__
+I have two models, the first with: r-squared: 0.44, adjusted r-squared: 0.43. 
+The second with: r-squared: 0.47, adjusted r-squared: 0.41. Which one should I use?
+
+_Answer_:
+The adjusted r-squared gives the r-squared value but adjusted for the amount of 
+variables you include in your model (and therefore penalising superfluous complexity)
+Go for model 1!
+
+__4__
+I have a model with the following errors: RMSE error on test set: 10.3,
+RMSE error on training data: 10.4. Do you think this model is over-fitting?
+
+_Answer_:
+Residual mean squared error (RMSE) gives the average error of predictions (either on the test or train set).
+You expect this to be smaller on the train set, and slightly higher on the test set.
+If higher on the train set, than the model might be underfitting!
+
+__5__
+How does k-fold validation work?
+
+_Answer_:
+Instead of splitting your data in a test set and a train set, you now split your data in 5 equal folds.
+You create a model for 4 folds (and exclude 1 different fold each time). You repeat this 5 times.
+You get 5 best models for each run, ideally this should give one similar model.
+You test this model on the 5 different test folds and compare the results, and pick the best 
+performing model.
+
+__6__
+What is a validation set? When do you need one?
+
+_Answer_:
+When you split your data into a train set (data set used to create, train, a model) and a test set. 
+You use this test data set to test the performance of your model and potentially compare 
+several models. This test data set is also called validation set.
+
+__7__
+Describe how backwards selection works.
+
+_Answer_:
+In automated model selection the algorithm starts creating a model including all variables.
+Each next step a variable is removed from the list of predictors and compared with the 
+previous model. In the end the best model is found. This method is called backwards selection.
+= you start with everything, and slowly reduce number of variables.
+
+__8__
+Describe how best subset selection works.
+
+_Answer_:
+Best subset selection is also called exhaustive search. Models are created of all different
+possible combinations of predictors, and performance is compared with each other.
+The best model based on the best subset is selected.
+
+
+## Part 2 - Model Building
+
+For this exercise I will perform manual step-wise regression, building a explanatory
+multiple linear regression model.
+
+__Goal:__  model the quality of the wines. Use regression to determine which 
+physiochemical properties make a wine ‘good’!
+
+```{r}
+library(tidyverse)
+library(GGally)
+library(modelr)
+library(skimr)
+library(ggfortify)
+```
+
+### first step: Approach to measure success and prevent overfitting 
+
+1. Goodness of fit measures I use: (adjusted) r-squared, AIC/BIC
+
+2. let's create a Train-Test split with 90:10 ratio
+
+```{r}
+red_wine <- read_csv("data/wine_quality_red.csv")
+
+white_wine <- read_csv("data/wine_quality_white.csv")
+
+# first for the red_wine:
+#. 1. Total rows:
+n_data_red <- nrow(red_wine)
+# test index:
+test_index_red <- sample(1:n_data_red, size = n_data_red*0.1)
+# use test index to create test and train set:
+test_red <- slice(red_wine, test_index_red)
+train_red <- slice(red_wine, -test_index_red)
+
+# Same for white:
+n_data_white <- nrow(white_wine)
+test_index_white <- sample(1:n_data_white, size = n_data_white*0.1)
+test_white <- slice(white_wine, test_index_white)
+train_white <- slice(white_wine, -test_index_white)
+
+```
+
+### Data exploration
+
+```{r}
+# data exploration
+
+head(train_red)
+skim(train_red) %>% 
+  view()
+dim(train_red)
+# 1599   14 - 1440   14
+
+head(train_white)
+skim(train_white) %>% 
+  view()
+dim(train_white)
+# 4898   14 - 4409   14
+```
+Based on the above, a few points:
+Red wine:
+1. Our dependent/outcome variable, y, is 'quality'
+2. column 'p_h_' is a scale, and so is quality
+3. non-informative columns are: 'wine_id', and 'region' (we do not want to base quality on just the country)
+4. likely total_sulfur_dioxide not of interest as its free SO2 over 50ppm that influences taste (according to info)
+5. positive distribution in: 
+alcohol, sulphates, total/free_sulphur, chlorides, residual sugar, citric_acid, volatile_acidity
+
+White wine:
+1. same as above, except positive distribution in: density, total_SO2, volatile_acidity, fixed_acidity,
+citric_acid, residual_sugar, chlorides
+
+A data manipulation step might be needed for the positive distributed variables.
+
+-> Each row represents one wine
+-> most variables (acidity, sugar, cholorides, SO2, density, sulphates) all in unit per dm^3
+-> alcohol in percentage, PH on scale
+
+### Data wrangling
+
+Goal is to build a general model to understand what properties make a wine good.
+We want to do this for all types of wines, lets combine datasets and add wine type 
+as a factor.
+
+```{r}
+red_wine_type <- train_red %>% 
+  mutate(is_red = TRUE) %>% 
+  select(-wine_id)
+
+white_wine_type <- train_white %>% 
+  mutate(is_red = FALSE) %>% 
+  select(-wine_id)
+
+#remove region
+wine_total <- 
+  bind_rows(white_wine_type, red_wine_type) %>% 
+  select(-region)
+
+wine_total
+```
+
+```{r}
+#missing values?
+wine_total %>% 
+  summarise(across(.fns = ~sum(is.na(.x))))
+# no missing data!
+
+# check for aliased variables:
+alias(quality ~ ., data = wine_total)
+# none
+```
+
+### Check correlations
+
+```{r message = FALSE}
+# lets explore ggpairs but by splitting variables in two sets
+
+wine_total_1 <- wine_total %>% 
+  select(fixed_acidity:chlorides, is_red, quality)
+
+wine_total_2 <- wine_total %>% 
+  select(free_sulfur_dioxide:is_red)
+
+ggpairs(wine_total_1)
+```
+In first set: 
+- highest correlation with quality is: volatile_acidity and chlorides
+- interesting interaction between is_red and acidity types..
+
+```{r message = FALSE}
+ggpairs(wine_total_2)
+
+wine_total_2 %>% 
+  ggpairs(aes(fill = is_red, alpha = 0.4, bins = 25))
+```
+In second set: 
+- highest correlation with quality is: alcohol and density
+- interesting interaction between is_red and ph and SO2 (free and residual)
+
+```{r}
+wine_total %>% 
+  ggplot(aes(x = is_red, y = quality)) +
+  geom_boxplot()
+
+```
+
+
+
+### Feature engineering part 2
+
+Based on above distributions, I want to check data after transforming:
+log(residual_sugar)
+log(chlorides)
+log(total_sulfur_dioxide)
+log(free_sulfur_dioxide)
+
+```{r message = FALSE}
+wine_total_transform <- wine_total %>% 
+  mutate(ln_residual_sugar = log(residual_sugar),
+         ln_chlorides = log(chlorides),
+         ln_total_so2 = log(total_sulfur_dioxide),
+         ln_free_so2 = log(free_sulfur_dioxide))
+
+wine_total_transform %>% 
+  select(ln_residual_sugar:ln_free_so2, quality, is_red) %>% 
+  ggpairs(aes(fill = is_red, alpha = 0.4, bins = 25))
+
+```
+
+We now see that there is a stronger correlation with log(chlorides) than before. 
+For the rest it did not differ a lot.
+-> So might be a good idea to add chlorides as log transform
+
+Rest did not change much.
+
+We also see now that total_SO2 and free_SO2 are strongly correlated with each other. 
+We might only want to keep free SO2 as its free SO2 over 50ppm that influences taste (according to info)
+
+## Start fitting model
+
+```{r}
+# we start with highest correlated property: alcohol!
+
+model_1 <- lm(quality ~ alcohol, wine_total)
+
+autoplot(model_1)
+# plot 1 (pattern of residuals): look ok, blue line flat on 0, points evenly distributed
+# plot 2 (residuals normally distributed): look good, points distributed on line
+# plot 3 (homoscedasticity test): points evenly distributed, line flat: ok!
+# plot 4: no extreme points causing high leverage
+```
+```{r}
+summary(model_1)
+
+# alcohol - significant
+# Residual standard error: 0.8415
+# Multiple R-squared:  0.1809,	Adjusted R-squared:  0.1807
+```
+### second predictor
+
+```{r message = FALSE}
+# get model residuals and see what variables will help explain remaining variation
+
+# first start with the transformed variables
+wine_resid <- wine_total_transform %>% 
+  select(ln_residual_sugar:ln_free_so2, alcohol, quality, is_red) %>%
+  add_residuals(model_1) %>% 
+  select(-quality, -alcohol)
+
+ggpairs(wine_resid)
+# free_so2 is highest, but only 0.18, lets check the other non-transformed first
+```
+
+```{r message = FALSE}
+#add residuals, and remove variables that are not interesting, based on the above
+wine_resid_2 <- wine_total %>% 
+   add_residuals(model_1) %>% 
+    select(-alcohol, -quality, -chlorides, -total_sulfur_dioxide, -is_red)
+
+ggpairs(wine_resid_2)
+
+# volatile acidity has now a weak correlation, but still worth considering -0.261. Lets add to the model.
+```
+__second predictor__
+```{r}
+model_2 <- lm(quality ~ alcohol + volatile_acidity, wine_total)
+
+autoplot(model_2)
+# plot 1 (pattern of residuals): looks ok, blue line flat on 0, points evenly distributed
+# plot 2 (residuals normally distributed): look good, points distributed on line
+# plot 3 (homoscedasticity test): points evenly distributed, line flat: ok!
+# plot 4: no extreme points causing high leverage
+```
+
+```{r}
+summary(model_2)
+
+# alcohol - significant, volatile_acidity - significant
+# Residual standard error: 0.8036
+# Multiple R-squared:  0.2444,	Adjusted R-squared:  0.2442 
+
+# We see an improvement, compared to model_1:
+
+#Model 1:
+# Residual standard error: 0.8415
+# Multiple R-squared:  0.1809,	Adjusted R-squared:  0.1807
+```
+
+### third predictor
+
+```{r message = FALSE}
+# get model residuals and see what variables will help explain remaining variation
+
+# first start with the transformed variables
+wine_resid_2 <- wine_total_transform %>% 
+  select(ln_residual_sugar:ln_free_so2, volatile_acidity, alcohol, quality, is_red) %>%
+  add_residuals(model_2) %>% 
+  select(-quality, -alcohol, -volatile_acidity)
+
+ggpairs(wine_resid_2)
+# all very weak correlations, so lets try the other variables
+
+```
+
+```{r message = FALSE}
+#let's check the other variables:
+wine_resid_2_rest <- wine_total %>% 
+  add_residuals(model_2) %>% 
+  select(-quality, -alcohol, -volatile_acidity)
+
+ggpairs(wine_resid_2_rest)
+```
+All correlations of remaining variables pretty weak.
+
+But we see that wine_type, has a particular influence on some of the variables.
+And also seems to have some effect on the remaining residuals:
+
+```{r}
+wine_resid_2_rest %>% 
+  ggplot() +
+  aes(x = is_red, y = resid) +
+  geom_boxplot()
+```
+
+I add is_red (wine type) as variable and see if this improved the model, and if this is 
+justified with an anova
+
+__third predictor__
+
+```{r}
+model_3 <- lm(quality ~ alcohol + volatile_acidity + is_red, wine_total)
+
+autoplot(model_3)
+# plot 1 (pattern of residuals): looks ok, blue line flat on 0, points evenly distributed
+# plot 2 (residuals normally distributed): look good, points distributed on line
+# plot 3 (homoscedasticity test): points evenly distributed, line flat: ok!
+# plot 4: no extreme points causing high leverage
+```
+
+```{r}
+summary(model_3)
+# all three variables significant
+# Residual standard error: 0.8006
+#Multiple R-squared:  0.2502,	Adjusted R-squared:  0.2498
+
+# there is some improvement over model2:
+
+#model2:
+# Residual standard error: 0.8036
+# Multiple R-squared:  0.2444,	Adjusted R-squared:  0.2442 
+```
+Let's check with an anova if its statistically justified to add is_red
+
+```{r}
+anova(model_2, model_3)
+
+```
+
+yes, adding is_red is significant so let's leave it.
+
+
+__explore if fourth predictor makes sense__
+
+```{r message = FALSE}
+# get model residuals and see what variables will help explain remaining variation
+wine_resid_3 <- wine_total %>% 
+  add_residuals(model_3) %>% 
+  select(-quality, -alcohol, -volatile_acidity, -is_red)
+
+ggpairs(wine_resid_3)
+
+# all correlations weak, only residual_sugar is highest with 0.1
+```
+
+all correlations weak, only residual_sugar is highest with 0.1. Not convincingly high, 
+so let's check if adding interactions make sense.
+
+### check for interactions
+
+I assume that wine type (is_red) potentially can have a strong interaction with the variables:
+
+```{r}
+# alcohol and wine type
+wine_total %>% 
+  ggplot(aes(x = alcohol, y = quality, colour = is_red)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+# do not see an interaction here
+
+quality ~ alcohol + volatile_acidity + is_red, wine_total
+```
+
+```{r}
+# volatile_acidity and wine type
+wine_total %>% 
+  ggplot(aes(x = volatile_acidity, y = quality, colour = is_red)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+# do not see an interaction here
+
+```
+
+```{r}
+# winte_type and quality:
+wine_total %>% 
+  ggplot(aes(x = is_red, y = quality, colour = is_red)) +
+  geom_boxplot()
+```
+
+```{r}
+# check for potential interaction alcohol and volatile_acidity
+coplot(quality ~ alcohol | volatile_acidity,
+       rows = 1,
+       panel = function(x, y, ...){
+         points(x, y)
+         abline(lm(y ~ x), col = "blue")
+       },
+       data = wine_total)
+
+# nope
+```
+
+### check AIC : BIC
+
+```{r}
+# let's check scores of the 3 models made:
+AIC(model_1)
+# 14457.44
+
+AIC(model_2)
+#14045.95
+
+AIC(model_3)
+#14003.22
+
+BIC(model_1)
+#14477.46
+
+BIC(model_2)
+#14072.65
+
+BIC(model_3)
+#14036.59
+
+# lower is better so we can conclude that model 3 is indeed the best from all options.
+```
+
+lower is better for AIC and BIC so we can conclude that model 3 is indeed the best from all options.
+
+### check best model on test dataset!
+
+```{r}
+# first combine both red and white wine test datasets
+
+test_white_2 <- test_white %>% 
+  mutate(is_red = FALSE) %>% 
+  select(-wine_id)
+
+test_red_2 <- test_red %>% 
+  mutate(is_red = TRUE) %>% 
+  select(-wine_id)
+
+
+wine_test_total <- 
+  bind_rows(test_white_2, test_red_2) %>% 
+  select(-region)
+```
+
+Now add predictions, based on our model (e.g. to compare model_2 and model_3) and 
+calculate mean squared error. To see which model is best.
+
+```{r}
+# model_2 vs model_3
+
+predictions_test_mod2 <- wine_test_total %>% 
+  add_predictions(model_2) %>% 
+  select(quality, pred)
+
+predictions_test_mod3 <- wine_test_total %>% 
+  add_predictions(model_3) %>% 
+  select(quality, pred)
+
+#calculate mean squared error for both:
+#model_2
+mse_model2 <- mean((predictions_test_mod2$pred - wine_test_total$quality)**2)
+
+#model_3
+mse_model3 <- mean((predictions_test_mod3$pred - wine_test_total$quality)**2)
+
+#result
+mse_model2
+# 0.6965714
+mse_model3
+# 0.6943345
+```
+
+A tiny difference, but model_3 is also again better in predicting using the test data set.
+
+```{r}
+# lets calculate the mean squared error, of the training set
+# we expect this to be smaller than the test set:
+
+predictions_train_mod3 <- wine_total %>% 
+  add_predictions(model_3) %>% 
+  select(quality, pred)
+
+mse_train_model3 <- mean((predictions_train_mod3$pred - wine_total$quality)**2)
+
+mse_train_model3
+```
+Yep, as expected. MSE is slightly smaller for the train set and test set. 
+
+### Conclusion
+
+The final model in terms of main effects is:
+quality ~ alcohol + volatile_acidity + is_red
+
+(with is_red, being the wine type: white or red)
+
+
+
+
+### Extra
+
+Just curious what automated model selection would do:
+
+```{r}
+library(leaps)
+
+regsubsets_forward <- regsubsets(quality ~ ., data = wine_total, nvmax = 6, method = 'forward')
+
+summary(regsubsets_forward)
+```
+
+```{r}
+plot(regsubsets_forward, scale = "adjr2")
+```
+
+
+So best 2 predictor model is likely: alcohol, and volatile_acidity
+3 predictor model: volatile_acidity, alcohol and sulphates
+
+If I had more time (and energy!) I would now create a model with:
+volatile_acidity, alcohol and sulphates
+
+And compare with the manual best model. And pick the best performing from these.
+
+
+
+
+
+
+
