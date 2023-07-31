@@ -588,6 +588,210 @@ volatile_acidity, alcohol and sulphates
 And compare with the manual best model. And pick the best performing from these.
 
 
+========================================================
+
+## Start of homework review Monday 31/07/2023
+
+```{r}
+library(tidyverse)
+library(GGally)
+library(modelr)
+library(skimr)
+library(ggfortify)
+```
+
+### first step: Approach to measure success and prevent overfitting 
+
+1. Goodness of fit measures I use: (adjusted) r-squared, AIC/BIC: parsimonious measures
+
+2. let's create a Train-Test split with 90:10 ratio
+
+3. k-fold CV? Yes - to prevent over-fitting
+
+4. red/white separately
+  -> lets start with white.
+
+```{r message = FALSE}
+#red_wine <- read_csv("data/wine_quality_red.csv")
+
+white_wine <- read_csv("data/wine_quality_white.csv")
+
+# first for the red_wine:
+#. 1. Total rows:
+# n_data_red <- nrow(red_wine)
+# test index:
+# test_index_red <- sample(1:n_data_red, size = n_data_red*0.1)
+# use test index to create test and train set:
+# test_red <- slice(red_wine, test_index_red)
+# train_red <- slice(red_wine, -test_index_red)
+
+# Same for white:
+n_data_white <- nrow(white_wine)
+
+# use test_prop for reproducibility reasons (instead of 0.1 in code)
+test_prop <- 0.1
+test_index_white <- sample(1:n_data_white, size = n_data_white * test_prop)
+test_white <- slice(white_wine, test_index_white)
+train_white <- slice(white_wine, -test_index_white)
+
+# explore the data
+
+  # what variables do we have, real -world process etc?
+skim(train_white) %>% view()
+
+  # what does one row represent?
+head(white_wine)
+# one row representaing a wine, with technical measurements and summarised average of quality (for one wine)
+
+# what transformations might make sense: log transform opportunities
+
+# what influences target (wine quality)?
+train_white %>% 
+  select(quality, 2:7) %>% 
+  ggpairs(progress = FALSE)
+# graph: quality-chlorides is almost a normal distribution. You could think of transforming by
+# getting the absolute distance to the mean for each point. (or instead of absolute: square them)
+# similar to this is the z-score normalisation:
+  # the process of normalizing every value in a dataset such that the mean of all of 
+  # the values is 0 and the standard deviation is 1
+
+train_white %>% 
+  select(quality, 8:14) %>% 
+  ggpairs(progress = FALSE)
+
+# Even though some of the variables are strongly correlated we do not throw one out 
+# yet as we have no idea how they correlate to quality, and which one might be best to add 
+# to our model. Once one is selected the other one is likely not interesting anyway.
+
+# What influences target, wine quality
+# density, alcohol, extreme values of acidity
+
+# next step: feature engineering
+# lets do a bunch of log transform, we can even do it on all to speed things up
+
+train_white_fe <- train_white %>% 
+  select(-wine_id) %>% 
+  mutate(across(where(is.numeric),
+                .fns = ~log(1 + .x),
+                .names = "log_{.col}")) %>% 
+  mutate(chlorides_diff_to_mean = chlorides - mean(chlorides),
+         .after = chlorides) %>%  # to shift the distribution to be centred around 0
+# use .names and {.col} to rename all with log as prefix
+  mutate(chlorides_abs_diff_to_mean = abs(chlorides_diff_to_mean),
+         .after = chlorides_diff_to_mean)
+
+# what does this now look like?
+ggplot(train_white_fe) + 
+  aes(x = chlorides_abs_diff_to_mean, y = quality) +
+  geom_point() +
+  geom_smooth(method = "lm")
+# slight negative relation, the further away from the mean, the lower the quality 
+# (although doesn't like the absolute values too much)
+# this wasn't helpful because x/y was confusing: so actually no specific relation between chlorides and quality
+# therefore confused by the plot and therefore tranformation was not helpful here.
+
+train_white_fe %>% 
+  select(quality, starts_with("log_")) %>% 
+  select(1:8) %>% 
+  select(starts_with("log"), quality) %>% 
+  ggpairs()
+# easiest if you have quality at the end, so your target variable is always your y on the plots!
+# this is why we got confused above with the chlorides:quality
+
+# let's start with a step-wise forward model, and start by including alcohol
+
+mod1 <- lm(quality ~ alcohol, data = train_white_fe)
+
+summary(mod1)
+# intercept is 2.5, every 1 unit increase in alcohol, we get a 0.3 point increase in quality
+
+train_white_fe %>% 
+  add_predictions(mod1) %>% 
+  add_residuals(mod1) %>% 
+  select(1:6, resid) %>% 
+  ggpairs()
+
+ggsave("mod1_resid.png", height = 10, width = 10)
+
+# you look at residuals from first variable onwards: as you are no longer interested in the
+# quality, but instead you are insterested in the next variable explaining the 
+# remaining variance in your residuals: this is given the variance not explained by the previous 
+# variables
+
+# you use summary(), by looking at the coefficients (what does it mean if variable increase with 1 unit)
+# you look at the measures indicating 'goodness of fit'.
+
+# lets continue with next variable:
+
+mod2 <- lm(quality ~ alcohol + volatile_acidity, data = train_white_fe)
+summary(mod2)
+# so with every unit increase of volatile_acidity, we drop 2 scores in quality.
+# goodness of fit measures indicate we have now an improved model.
+
+autoplot(mod2)
+# you check diagnositics, to check if the assumpotions for a linear regression are still holding/ valid
+# you check for: model is unbiased (no pattern in residuals, or how we are wrong)
+# how normal are residuals distributed
+# homoscedacity, does variance increase (how wrong are we) towards higher values / or lower?
+
+# just trying something to tackle a question:
+mod2 <- lm(quality ~ alcohol + volatile_acidity + log_volatile_acidity, data = train_white_fe)
+summary(mod2)
+# by adding the log version, the non-log is suddenly no longer significant
+# so it is telling: don't add both! 
+mod3 <- lm(quality ~ alcohol + log_volatile_acidity, data = train_white_fe)
+summary(mod3)
+
+#If you add a log transformed variable in your model, its hard to report during a meeting
+# something like: I have a volatile_acidity of 5 what is my score? 
+# with normal variable you can say, increase of 1 unit results in increase/decrease of y.
+#
+# But with log(variable), you can report things like:
+#1.  volatile_acidity influences quality
+#2.  sign keeps valid, so as volatile_acidity increases the quality decreases
+#3.  volatile_acidity has a logNormal distribution:
+  # volatile_acidity distribution: (normal distr, but with positive skew)
+  # log(volatile_acidity) has a normal distribution
+
+
+
+```
+
+```{r}
+# k-fold CV
+library(caret)
+
+# you can cross validation a couple of times and compare 
+# you can do cross validation multiple of times
+
+# In general advice is to first do some more own explorations before starting with
+# k-fold cross validation
+
+white_wine_cv_10_fold <- trainControl(method = "cv", # cross-validation
+                           number = 10, # 10-fold
+                           savePredictions = TRUE) # save all predictions
+
+model_ww10fold <- train(quality ~ .,
+               data = white_wine_transform,
+               trControl = white_wine_cv_10_fold,
+               method = 'lm')
+```
+
+
+```{r}
+# related to how to split your raw data set?
+
+# 70: training
+# 20: test: overfitting? Which model does best? Choose best model depending on adjusted-r-squared
+# you have used the test data set to make further decissions on which models to pick
+# 10: validation set. This is the unbiased dataset for a final view.
+# the decision is already made and you use the validation set to do a final validation check.
+```
+
+
+
+
+
 
 
 
