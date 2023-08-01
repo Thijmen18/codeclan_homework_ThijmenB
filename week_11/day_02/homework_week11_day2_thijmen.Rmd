@@ -1,0 +1,195 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework week 11 - day2
+
+```{r}
+library(rpart)
+library(rpart.plot)
+library(tidyverse)
+library(GGally)
+
+library(tidyverse)
+titanic_set <- read_csv('data/titanic_decision_tree_data.csv')
+
+shuffle_index <- sample(1:nrow(titanic_set))
+
+# shuffle the data so class order isn't in order - need this for training/testing split later on 
+titanic_set <- titanic_set[shuffle_index, ]
+```
+
+## Question 1
+
+
+```{r}
+#cleaning
+titanic_tidy <- titanic_set %>% 
+  filter(!is.na(survived)) %>% 
+  mutate(sex = as_factor(sex),
+         survived_flag = as_factor(if_else(survived == 1, TRUE, FALSE)),
+         pclass = as_factor(pclass),
+         embarked = as_factor(embarked)) %>% 
+  mutate(age_status = as_factor(if_else(age > 16, "adult", "child"))) %>% 
+  filter(!is.na(age_status)) %>% 
+  select(-...1, -passenger_id, -name, -ticket, -fare, -cabin, -age, -survived)
+
+titanic_tidy
+```
+
+## Question 2
+
+Have a look at your data and create some plots to ensure you know what you’re 
+working with before you begin. Write a summary of what you have found in your 
+plots. Which variables do you think might be useful to predict whether or not 
+people are going to die? Knowing this before you start is the best way to have 
+a sanity check that your model is doing a good job.
+
+```{r message = FALSE}
+titanic_tidy %>% 
+ggpairs()
+
+```
+
+Based on the GGpairs plot, looking at survived column it looks like:
+sex -> gives a good indication if someone will survive
+age_status -> good indication
+pclass -> gives a reasonable indication 
+
+Not great indicators are:  embarked, parch, and sib_sp
+
+## Question 3
+
+80% training, 20% saved for testing
+
+```{r}
+# how many rows in total
+n_data <- nrow(titanic_tidy)
+#714
+
+proportion <- 0.2
+
+# create a test sample index
+test_index <- sample(1:n_data, size = n_data*proportion)
+
+# split the data
+titanic_test <- slice(titanic_tidy, test_index)
+titanic_train <- slice(titanic_tidy, -test_index)
+
+
+#check if balanced:
+
+titanic_test %>% 
+  janitor::tabyl(survived_flag)
+
+titanic_train %>% 
+  janitor::tabyl(survived_flag)
+
+# proportions very close, so all ok!
+```
+
+## Question 4
+
+Create your decision tree to try and predict survival probability using an 
+appropriate method, and create a decision tree plot.
+
+```{r}
+# 1. make a tree model
+titanic_fit <- rpart(
+  formula = survived_flag ~ ., # include all variables
+  data = titanic_train,
+  method = "class" # 'class' for a categorical predictor
+)
+
+# 2. plot tree model
+rpart.plot(titanic_fit,
+           yesno = 2, # this writes y/n  at all splits
+           type = 2, # dictates where our conditions lie at each node
+           fallen.leaves = TRUE, # True means leaves all aligned at bottom
+           faclen = 6, # length of factor names
+           digits = 2, # how many decimal places is prob reported to
+           split.border.col = 1 # colour of border factor names
+           )
+```
+
+## Question 5
+
+Write down what this tells you, in detail. What variables are important? 
+What does each node tell you? Who has the highest chance of surviving? 
+Who has the lowest? Provide as much detail as you can.
+
+-> The decimal number gives the probability someone survived, given that they reach that leave
+  While the proportion in % gives the total proportion of 'observations' at that point: the conditional probibility
+  
+Each node tells us:
+  - predicted survival TRUE/FALSE at the top
+  - decimal number gives us the probability of survival (of people meeting the conditions to reach this node)
+  - % number, gives us the percentage of observations that pass through this node
+
+So in short, the root gives us: 100% of the data/observations/passengers reach this point.
+0.4 (=40%) meet the condition we are looking for (=survived_flag)
+
+Highest chance of surviving:
+0.93, with conditions: female in another pclass than 3
+
+Lowest chance of survival:
+0.06, with coditions: male, from pclass 2 or 3, child, with sib_sp less than 3
+
+## Question 6
+
+Test and add your predictions to your data. Create a confusion matrix. Write down 
+in detail what this tells you for this specific dataset.
+
+```{r}
+#Use train model to add predictions to test data
+
+library(modelr)
+
+# add the predictions
+titanic_test_pred <- titanic_test %>%
+  add_predictions(titanic_fit, type = "class")
+
+# confusion matrix
+library(yardstick)
+
+conf_mat <- titanic_test_pred %>% 
+  conf_mat(truth = survived_flag,
+           estimate = pred)
+
+conf_mat
+```
+Confusion matrix tells us:
+1. that for observations we predicted 'survival': 41 did in reality survive, 8 did not. 
+  -> We have 8 false positives
+2. of our predicted 'not-survival': 75 did not survive, and 18 did survive in reality.
+  -> we have 18 false negatives
+  
+We can calculate the Sensitivity (true positive rate)
+```{r}
+sensitivity <- titanic_test_pred %>% 
+  sensitivity(truth = survived_flag, estimate = pred)
+
+sensitivity
+#0.9 good!
+```
+
+We can calculate the Specificity (true negative rate)
+
+```{r}
+specificity <- titanic_test_pred %>% 
+  specificity(truth = survived_flag, estimate = pred)
+
+specificity
+#0.69 less good but ok..
+```
+
+
+
+
+
+
+
+
+
+
