@@ -1,0 +1,215 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Homework week 11 - day 3 - Clustering
+
+This homework involves the mall_customers.csv data we’ve provided, based on data 
+collected in a shopping mall. It will give you an opportunity to practice your new clustering skills.
+
+```{r}
+library(tidyverse)
+
+```
+
+# Question 1
+Data exploration
+
+```{r}
+customers <- read_csv("data/mall_customers.csv")
+head(customers)
+dim(customers)
+skimr::skim(customers)
+```
+
+We have 200 observations, with 5 columns: customerID, gender, age, annual income (in k$) and 
+spending score (running from 1-100)
+
+So each row represents one customer. Spending score potentially is a score for how
+much money is spend in the mall
+
+We have no missing datapoints, distributions look ok for the type of data it contains 
+(always positive, so slighlty right skewed)
+
+# Question 2
+
+We are interested in creating a marketing campaign to target customers based on 
+their spending score and annual income. Select an appropriate value for k and 
+perform k-means clustering to find if there are meaningful clusters in the data to target the customers.
+
+```{r}
+library(janitor)
+library(fastDummies)
+library(broom)
+library(tidyverse)
+library(factoextra)
+```
+
+```{r}
+# we are interested in clustering based on spending score and income
+# clean names and select only these:
+
+num_customers <- customers %>% 
+ # column_to_rownames("Gender") %>% 
+  clean_names() %>% 
+  select(annual_income_k, spending_score_1_100)
+
+ggplot(num_customers, aes(x = annual_income_k, y = spending_score_1_100)) +
+  geom_point()
+
+# interesting pattern, roughly  clusters visible!
+```
+
+```{r}
+# scaling of the variables
+
+customers_scale <- num_customers %>% 
+  mutate_if(is.numeric, scale)
+
+customers_scale
+
+customers_scale %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = c(annual_income_k, spending_score_1_100),
+               names_to = "score_income",
+               values_to = "value") %>% 
+  group_by(score_income) %>% 
+  summarise(mean = round(mean(value)),
+            sd = sd(value))
+
+# success!
+```
+
+check each of the methods of choosing k:
+
+```{r}
+# elbow method
+fviz_nbclust(customers_scale,
+             kmeans,
+             method = "wss",
+             nstart = 25)
+```
+I suggest that the elbow starts at 5
+
+```{r}
+# silhouette coefficient
+
+fviz_nbclust(customers_scale,
+             kmeans,
+             method = "silhouette",
+             nstart = 25)
+```
+- 5 seems to be ideal here again..
+
+```{r}
+# gap statistic
+
+fviz_nbclust(customers_scale, kmeans, method = "gap_stat")
+```
+Here one, but after that 5 also still seems reasonable.
+
+Given the results above, I go for 5 clusters
+```{r}
+clustered_customers <- kmeans(customers_scale,
+                              centers = 5,
+                              nstart = 25)
+
+clustered_customers
+```
+
+```{r}
+#some more info on clusters
+tidy(clustered_customers, col.names = colnames(customers_scale))
+```
+
+```{r}
+# augment assigns each cluster number back to the observations
+
+clusters <- augment(clustered_customers, customers) %>% 
+  clean_names()
+
+clusters
+```
+
+```{r}
+# slightly more informative info per cluster:
+clusters %>% 
+  select(-customer_id) %>% 
+  group_by(cluster) %>% 
+  summarise(across(.col = is.numeric, .fns = ~ mean(.x)))
+
+```
+
+
+# Question 3
+
+Visualise the clustering for your chosen value of k.
+
+```{r}
+clusters %>% 
+  ggplot() +
+  aes(x = annual_income_k, y = spending_score_1_100, colour = cluster) +
+  geom_point()
+```
+Based on this graph, we see 5 groups of customers:
+Within group of customers that have a high annual income (mean income 86 and 88), there
+is a group with a high spending score, and a group with low spending score.
+
+This same pattern is visible for customers with a low annual income (mean 25 and 26k)
+
+Only customers with an average income (55k), sahre a similar spending score with a mean of 49
+
+```{r}
+#let's check some demographics:
+#gender
+
+clusters %>% 
+  ggplot() +
+  aes(x = annual_income_k, y = spending_score_1_100, colour = cluster) +
+  geom_point() +
+  facet_wrap(~ gender)
+```
+The different genders give the same clustering pattern.
+
+```{r}
+clusters %>% 
+  ggplot() +
+  aes(x = annual_income_k, y = age, colour = cluster) +
+  geom_point() 
+
+# grouping stays roughly valid
+
+clusters %>% 
+  ggplot() +
+  aes(x = spending_score_1_100, y = age, colour = cluster) +
+  geom_point() 
+
+# interesting: 
+# - for younger customers with high income, no difference in spending score
+# - customers with low or middle income, have a spending score independent of age.
+
+```
+
+# Question 4
+
+Do you think the clustering seems a good fit for this data?
+
+Yes, since the grouping of 5 clusters stays +/- present across visualisations of
+different variables.
+
+# Question 5
+
+```{r}
+clusters %>% 
+  ggplot() +
+  aes(x = annual_income_k, y = spending_score_1_100, colour = cluster) +
+  geom_point() +
+  facet_wrap(~ gender) +
+  scale_colour_discrete(labels = c("low income, high spending",
+                                 "average income and spending",
+                                 "low income, low spending",
+                                 "high income, high spending",
+                                 "high income, low spending"))
+```
+

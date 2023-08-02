@@ -63,6 +63,10 @@ Not great indicators are:  embarked, parch, and sib_sp
 
 80% training, 20% saved for testing
 
+__Important__ from answers: you can do forced stratification of the variables, 
+  so you are sure there is an equal distribution of your variables inside both your training and
+  test set.
+
 ```{r}
 # how many rows in total
 n_data <- nrow(titanic_tidy)
@@ -136,6 +140,12 @@ Highest chance of surviving:
 Lowest chance of survival:
 0.06, with coditions: male, from pclass 2 or 3, child, with sib_sp less than 3
 
+
+---
+From Answwer: To get 11%, you need to calculate 216+27=243 ; 27 from 243 is 11%
+
+All percentages add up to 100%, because that is your total population.
+
 ## Question 6
 
 Test and add your predictions to your data. Create a confusion matrix. Write down 
@@ -185,6 +195,26 @@ specificity
 ```
 
 
+## Extension
+
+```{r}
+# code from answers
+
+library(ranger)
+library(caret)
+
+control <- trainControl(
+  method = "repeatedcv", 
+  number = 5, 
+  repeats = 10
+)
+
+tune_grid = expand.grid(
+  mtry = 1:6,
+  splitrule = c("gini", "extratrees"),
+  min.node.size = c(1, 3, 5)
+)
+```
 
 
 
