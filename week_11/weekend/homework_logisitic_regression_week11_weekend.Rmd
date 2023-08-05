@@ -1,0 +1,490 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Weekend homework Week 11 - logistic regression
+
+You have been provided with a set of data on customer purchases of either ‘Citrus Hill’ 
+(purchase = 'CH') or ‘Minute Maid’ (purchase = 'MM') orange juice, together with some 
+further attributes of both the customer and the store of purchase. A data dictionary 
+is also provided in the data directory.
+
+We would like you to build the best predictive classifier you can of whether a customer 
+is likely to buy Citrus Hill or Minute Maid juice. Use logistic regression to do this. 
+You should use either train-test splitting or cross-validation to evaluate your classifier. 
+The metric for ‘best classifier’ will be highest AUC value either in the test set 
+(for train-test splitting) or from cross-validation.
+
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(skimr)
+library(GGally)
+library(modelr)
+library(broom)
+library(pROC)
+```
+
+```{r}
+orange <- read_csv("data/orange_juice.csv")
+head(orange)
+
+skim(orange)
+# no missing values
+
+```
+There are no missing values.
+There are 16 numeric variables, 2 character.
+
+We need to wrangle some variables:
+1. dependent variable Purchase -> logical variable, e.g. purchase_mm
+2. storeID -> factor
+3. WeekofPurchase -> I decide to leave it in as numerical, potentially there is
+  a relation with week number throughout the year and specific brand. 
+4. SpecialCH / SpecialMM -> factor
+5. Store7 -> logical variable
+6. STORE -> factor
+
+```{r}
+orange <- clean_names(orange)
+
+#wrangle the variables
+orange_data <- orange %>% 
+    mutate(purchase_mm = if_else(purchase == "MM", TRUE, FALSE), .before = purchase) %>% 
+    mutate(store_id = as_factor(store_id),
+           special_ch = as.logical(special_ch),
+           special_mm = as.logical(special_mm),
+           store7 = if_else(store7 == "Yes", TRUE, FALSE),
+           store = as_factor(store)) %>% 
+    select(-purchase)
+    
+```
+
+### look at alliased variables
+```{r}
+alias(purchase_mm ~ ., data = orange_data)
+```
+Output gives the aliases:
+sale_price_mm, sale_price_ch, price_diff, store7TRUE, list_price_diff, store
+
+Let's drop these!
+
+```{r}
+orange_data_tidy <- orange_data %>% 
+  select(-sale_price_mm, -sale_price_ch, -store7, -store, -list_price_diff, -price_diff)
+
+alias(purchase_mm ~ ., data = orange_data_tidy)
+```
+No aliases remaining!
+
+### look at realtionships of variables with purchase_mm
+
+```{r}
+# we have 12 variables, so lets split into 2 for easier interpretation
+
+split1 <- orange_data_tidy %>% 
+  select(purchase_mm, weekof_purchase, store_id, price_ch, price_mm, disc_ch, disc_mm)
+
+split2 <- orange_data_tidy %>% 
+  select(purchase_mm, special_ch, special_mm, loyal_ch, pct_disc_mm, pct_disc_ch)
+
+
+```
+
+```{r message = FALSE}
+split1 %>% 
+  ggpairs()
+# of intrest, significant looking relationships between purchase_mm and:
+# weekof_purchase,  store_id, price_mm, price_ch, 
+
+```
+
+```{r message = FALSE}
+split2 %>% 
+  ggpairs()
+# of intrest, significant looking relationships between purchase_mm and:
+# loyal_ch, special_mm, special_ch
+```
+
+
+### Let's build a model
+
+build a model including the predictors that seemed to have a significant relation
+with purchase_mm above (and even took the questionable ones)
+
+__model1__ 
+
+```{r}
+purchase_mm_multi_logreg_model <- glm(purchase_mm ~
+                                        loyal_ch + weekof_purchase + store_id + 
+                                        special_ch + special_mm + price_mm + price_ch,
+                                      data = orange_data_tidy, family = binomial(link = "logit"))
+
+purchase_mm_multi_logreg_model
+
+summary(purchase_mm_multi_logreg_model)
+```
+Based on the summary: following predictors seem to be significant:
+loyal_ch, store, special_mm, price_mm, price_ch
+
+Check statistical significance of each predictor added to the model
+```{r}
+tidy_out <- clean_names(tidy(purchase_mm_multi_logreg_model))
+
+tidy_out
+```
+So based on this result we see that with an α = 0.05
+loyal_ch, store_id, special_mm, price_mm, price_ch are significant.
+
+### build second model with only significant predictors
+
+__model2__
+
+```{r}
+
+purchase_mm_multi_logreg_model2 <- glm(purchase_mm ~
+                                        loyal_ch + store_id + 
+                                        special_ch + special_mm + price_mm + price_ch,
+                                      data = orange_data_tidy, family = binomial(link = "logit"))
+
+summary(purchase_mm_multi_logreg_model2)
+
+tidy_out1 <- clean_names(tidy(purchase_mm_multi_logreg_model2))
+
+tidy_out1
+
+```
+
+We now see that special_ch is not significant, so lets remove from the model
+
+__model3__
+
+```{r}
+purchase_mm_multi_logreg_model3 <- glm(purchase_mm ~
+                                        loyal_ch + store_id + 
+                                        special_mm + price_mm + price_ch,
+                                      data = orange_data_tidy, family = binomial(link = "logit"))
+
+summary(purchase_mm_multi_logreg_model3)
+
+tidy_out1 <- clean_names(tidy(purchase_mm_multi_logreg_model3))
+
+tidy_out1
+```
+
+All predictors are significant, lets stick to this for now..
+
+### Let's check with cross validation
+
+NOTE!!!! I DO NOT GET CROSS VALIDATION TO WORK, SO CONTINUE WITH A TRAIN/TEST SET -> SEE BELOW!
+
+```{r}
+library(caret)
+```
+
+```{r}
+# package is fussy about type of categorical variables
+# change purchase_mm from logical to factor
+
+orange_data_tidy <- orange_data_tidy %>% 
+  mutate(purchase_mm = as_factor(purchase_mm),
+         special_ch = as_factor(special_ch),
+         special_mm = as_factor(special_mm))
+```
+
+
+
+```{r}
+train_control <- trainControl(method = "repeatedcv",
+                              number = 5,
+                              repeats = 100,
+                              savePredictions = TRUE,
+                              classProbs = TRUE,
+                              summaryFunction = twoClassSummary)
+```
+
+```{r}
+model3_5pred_orange_cv <- train(purchase_mm_multi_logreg_model3$formula,
+                                data = orange_data_tidy,
+                                trControl = train_control,
+                                method = "glm",
+                                family = binomial(link = "logit"))
+```
+
+### SET UP TRAIN - TEST splitting
+this should have been done before creating/testing out first models. But wanted to see 
+if cross validation would work first.
+So I pretend I did not build any models just yet.. :-)
+
+```{r}
+test_indices <- sample(1:nrow(orange_data_tidy), size = as.integer(nrow(orange_data_tidy) * 0.2))
+
+train <- orange_data_tidy %>% 
+  slice(-test_indices)
+
+test <- orange_data_tidy %>% 
+  slice(test_indices)
+
+# sanity check
+nrow(train) + nrow(test) == nrow(orange_data_tidy)
+```
+
+Let's check the distribution of the outcome to see if they are comparable
+
+```{r}
+train %>% 
+  tabyl(purchase_mm)
+```
+
+```{r}
+test %>% 
+  tabyl(purchase_mm)
+```
+Perfect!
+
+### Back to creating models, now with the train dataset.
+lets repeat the above model creation steps
+
+__model1__
+including all predictors that seemed to have a significant relation with purchase_mm
+
+```{r}
+model_1 <- glm(purchase_mm ~
+                                        loyal_ch + weekof_purchase + store_id + 
+                                        special_ch + special_mm + price_mm + price_ch,
+                                      data = train, family = binomial(link = "logit"))
+
+model_1
+summary(model_1)
+
+tidy_out1 <- clean_names(tidy(model_1))
+
+tidy_out1
+```
+Comparable result as above, let's select the significant predictors:
+price_ch, price_mm, special_mm, loyal_ch
+
+__model2__
+including only the significant predictors from the first model
+
+```{r}
+model_2 <- glm(purchase_mm ~
+                                        loyal_ch + special_mm + price_mm + price_ch,
+                                      data = train, family = binomial(link = "logit"))
+
+model_2
+summary(model_2)
+
+tidy_out2 <- clean_names(tidy(model_2))
+
+tidy_out2
+```
+
+__model3__
+Just because above we also had store_id significant, want to add it to a third model
+
+```{r}
+model_3 <- glm(purchase_mm ~
+                                        loyal_ch + special_mm + price_mm + price_ch + store_id,
+                                      data = train, family = binomial(link = "logit"))
+
+model_3
+summary(model_3)
+
+tidy_out3 <- clean_names(tidy(model_3))
+
+tidy_out3
+```
+Indeed not significant!
+
+### check and compare AUC scores for these models
+
+On train data:
+```{r}
+# plot ROC curves:
+
+# Model1
+# first add predictor in data
+orange_pred_model_1 <- train %>% 
+  add_predictions(model_1)
+
+roc_orange_model_1 <- orange_pred_model_1 %>% 
+  roc(response = purchase_mm,
+      predictor = pred)
+
+# Model2
+# first add predictor in data
+orange_pred_model_2 <- train %>% 
+  add_predictions(model_2)
+
+roc_orange_model_2 <- orange_pred_model_2 %>% 
+  roc(response = purchase_mm,
+      predictor = pred)
+
+# Model2
+# first add predictor in data
+orange_pred_model_3 <- train %>% 
+  add_predictions(model_3)
+
+roc_orange_model_3 <- orange_pred_model_3 %>% 
+  roc(response = purchase_mm,
+      predictor = pred)
+
+# plot:
+ggroc(list(roc_orange_model_1, roc_orange_model_2, roc_orange_model_3))
+
+# AUC:
+
+auc(roc_orange_model_1)
+#0.898
+auc(roc_orange_model_2)
+#0.8967
+auc(roc_orange_model_3)
+#0.8981
+```
+All very comparable, let's compare for test data!
+
+```{r}
+#plot ROC curves:
+
+# Model1
+# first add predictor in data
+orange_pred_model_1 <- test %>% 
+  add_predictions(model_1)
+
+roc_orange_model_1 <- orange_pred_model_1 %>% 
+  roc(response = purchase_mm,
+      predictor = pred)
+
+# Model2
+# first add predictor in data
+orange_pred_model_2 <- test %>% 
+  add_predictions(model_2)
+
+roc_orange_model_2 <- orange_pred_model_2 %>% 
+  roc(response = purchase_mm,
+      predictor = pred)
+
+# Model2
+# first add predictor in data
+orange_pred_model_3 <- test %>% 
+  add_predictions(model_3)
+
+roc_orange_model_3 <- orange_pred_model_3 %>% 
+  roc(response = purchase_mm,
+      predictor = pred)
+
+# plot:
+ggroc(list(roc_orange_model_1, roc_orange_model_2, roc_orange_model_3))
+
+# AUC:
+
+auc(roc_orange_model_1)
+#0.8653
+auc(roc_orange_model_2)
+#0.8577
+auc(roc_orange_model_3)
+#0.8627
+```
+
+Results are so close to each other, so most parsimonous model is model 2
+
+These are our main effect models
+
+### Let's check for significant interactions
+
+From model 2 we have our main predictors:
+loyal_ch + special_mm + price_mm + price_ch
+
+possible interaction are:
+
+loyal_ch:special_mm
+loyal_ch:price_mm
+loyal_ch:price_ch
+special_mm:price_mm
+special_mm:price_ch
+price_mm:price_ch
+
+```{r}
+# let's model and add the single interactions per model
+
+model_4 <- glm(purchase_mm ~ loyal_ch + special_mm + price_mm + price_ch + loyal_ch:special_mm,
+                                      data = train, family = binomial(link = "logit"))
+
+model_5 <- glm(purchase_mm ~ loyal_ch + special_mm + price_mm + price_ch + loyal_ch:price_mm,
+                                      data = train, family = binomial(link = "logit"))
+
+model_6 <- glm(purchase_mm ~ loyal_ch + special_mm + price_mm + price_ch + loyal_ch:price_ch,
+                                      data = train, family = binomial(link = "logit"))
+
+model_7 <- glm(purchase_mm ~ loyal_ch + special_mm + price_mm + price_ch + special_mm:price_mm,
+                                      data = train, family = binomial(link = "logit"))
+
+model_8 <- glm(purchase_mm ~ loyal_ch + special_mm + price_mm + price_ch + special_mm:price_ch,
+                                      data = train, family = binomial(link = "logit"))
+
+model_9 <- glm(purchase_mm ~ loyal_ch + special_mm + price_mm + price_ch + price_mm:price_ch,
+                                      data = train, family = binomial(link = "logit"))
+
+
+summary(model_4) #not sig
+summary(model_5) #not sig
+summary(model_6) #not sig
+summary(model_7) #not sig
+summary(model_8) #sig!!
+summary(model_9) #not sig
+
+```
+
+```{r}
+# compare AUC scores on test data set
+roc_4 <- test %>% 
+  add_predictions(model_4, type = "response") %>% 
+  roc(response = purchase_mm, predictor = pred)
+
+roc_5 <- test %>% 
+  add_predictions(model_5, type = "response") %>% 
+  roc(response = purchase_mm, predictor = pred)
+
+roc_6 <- test %>% 
+  add_predictions(model_6, type = "response") %>% 
+  roc(response = purchase_mm, predictor = pred)
+
+roc_7 <- test %>% 
+  add_predictions(model_7, type = "response") %>% 
+  roc(response = purchase_mm, predictor = pred)
+
+roc_8 <- test %>% 
+  add_predictions(model_8, type = "response") %>% 
+  roc(response = purchase_mm, predictor = pred)
+
+roc_9 <- test %>% 
+  add_predictions(model_9, type = "response") %>% 
+  roc(response = purchase_mm, predictor = pred)
+
+auc(roc_4)
+#0.8572
+auc(roc_5)
+#0.8577
+auc(roc_6)
+#0.8593
+auc(roc_7)
+#0.8584
+auc(roc_8)
+#0.8573
+auc(roc_9)
+#0.8563
+```
+
+All extremely similar, with only model 8 having an significant interaction
+
+I therefore go for the model:
+
+purchase_mm ~ loyal_ch + special_mm + price_mm + price_ch + special_mm:price_ch,
+
+In reality you would use automated approach to create the model. Than all different
+predictors are tested, and as the homework solutions show, the model has different 
+predictors as a result.
