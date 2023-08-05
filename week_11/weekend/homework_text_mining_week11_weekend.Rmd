@@ -1,0 +1,108 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Weekend homework - Text Mining
+
+Using the dataset austen_books() from the package janeaustenr:
+
+# question 1
+Find the most common words in both Mansfield Park and Sense & Sensibility.
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(ggwordcloud)
+library(janeaustenr)
+```
+```{r}
+
+mansfield <- tibble(
+  id = 1:length(mansfieldpark),
+  text = mansfieldpark
+) %>% 
+  unnest_tokens(word, text) 
+
+sense <- tibble(
+  id = 1:length(sensesensibility),
+  text = sensesensibility
+) %>% 
+  unnest_tokens(word, text)
+
+#remove the stop_words
+mansfield_total_word_count <- mansfield %>% 
+  count(word, sort = TRUE)
+
+pride_total_word_count <- sense %>% 
+  count(word, sort = TRUE)
+
+mansfield_total_word_count
+pride_total_word_count
+```
+
+# question 2
+Find the most common words in both Mansfield Park and Sense & Sensibility, not including stop words.
+
+```{r}
+#remove the stop_words
+mansfield_word_count <- mansfield %>% 
+  anti_join(stop_words) %>% 
+  count(word, sort = TRUE)
+
+pride_word_count <- sense %>% 
+  anti_join(stop_words) %>% 
+  count(word, sort = TRUE)
+
+mansfield_word_count
+pride_word_count
+```
+
+# question 3
+Find the most common sentiment words in both Mansfield Park and Sense & Sensibility.
+
+```{r}
+#mansfield
+
+mansfield_common_sentiment_words <- mansfield_word_count %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  slice(1:10)
+  
+pride_common_sentiment_words <- pride_word_count %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  slice(1:10)
+
+mansfield_common_sentiment_words
+pride_common_sentiment_words
+
+
+```
+
+# extension
+Taking your results above. Can you create a plot which visualises the differences between the books?
+
+```{r}
+#plotting a sentiment graph for the totality of the book:
+
+mansfield %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  mutate(word_n = row_number()) %>% 
+    mutate(story_position = word_n/max(word_n)) %>% 
+    ggplot() +
+    aes(x = story_position, y = value) +
+  geom_smooth(se = FALSE)
+
+sense %>% 
+    inner_join(get_sentiments("afinn")) %>% 
+  mutate(word_n = row_number()) %>% 
+    mutate(story_position = word_n/max(word_n)) %>% 
+    ggplot() +
+    aes(x = story_position, y = value) +
+  geom_smooth(se = FALSE)
+
+```
+
+
+
+
+
